@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Entrar ou criar conta — FluxReel</title>
+<meta name="description" content="Entre ou crie sua conta na FluxReel para começar a gerar vídeos virais com IA todos os dias." />
+<link rel="icon" href="/logo-icon.webp" type="image/webp" />
+<link rel="apple-touch-icon" href="/logo-icon.webp" />
+
+<style>
+  :root {
+    --brand-blue: #4F6BFF;
+    --brand-cyan: #20D9FF;
+    --brand-dark: #080B18;
+    --text-primary: #f5f5f7;
+    --text-muted: #9a9aa5;
+    --text-faint: #6b6b76;
+    --border-soft: rgba(255,255,255,0.10);
+    --surface-1: rgba(255,255,255,0.03);
+    --surface-2: rgba(255,255,255,0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: var(--brand-dark);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* subtle grid background, matching the reference screen */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(circle at 50% 30%, black, transparent 75%);
+    -webkit-mask-image: radial-gradient(circle at 50% 30%, black, transparent 75%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .auth-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .brand img { height: 32px; width: 32px; border-radius: 8px; }
+  .brand span { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .text-gradient {
+    background-image: linear-gradient(90deg, var(--brand-blue) 0%, #6A5CFF 45%, var(--brand-cyan) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .tabs {
+    display: flex;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-soft);
+    margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 0;
+    border-radius: 999px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .tab.active {
+    background: #fff;
+    color: #18181b;
+  }
+
+  .google-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 46px;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+  }
+  .google-btn:hover { background: var(--surface-2); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+    color: var(--text-faint);
+    font-size: 12px;
+  }
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-soft);
+  }
+
+  form { display: flex; flex-direction: column; gap: 18px; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-size: 13px; font-weight: 500; color: #c7c7ce; }
+  .field input {
+    height: 46px;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    padding: 0 14px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .field input:focus { border-color: var(--brand-blue); }
+  .field .hint { font-size: 12px; color: var(--text-faint); margin-top: -4px; }
+
+  .submit-btn {
+    margin-top: 4px;
+    width: 100%;
+    height: 46px;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    background-image: linear-gradient(90deg, var(--brand-blue) 0%, #6A5CFF 50%, var(--brand-cyan) 100%);
+    box-shadow: 0 10px 30px -10px rgba(79,107,255,0.45);
+    transition: opacity 0.2s ease;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .form-error {
+    display: none;
+    font-size: 13px;
+    color: #f87171;
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .form-error.show { display: block; }
+
+  .form-success {
+    display: none;
+    font-size: 13px;
+    color: #34d399;
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.25);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .form-success.show { display: block; }
+
+  .back-link {
+    display: block;
+    margin-top: 28px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-faint);
+    transition: color 0.2s ease;
+  }
+  .back-link:hover { color: var(--text-primary); }
+
+  [data-only-signup] { display: none; }
+  .mode-signup [data-only-signup] { display: flex; }
+</style>
+</head>
+<body class="mode-login">
+
+<div class="auth-card">
+  <a class="brand" href="/index.html">
+    <img src="/logo-icon.webp" alt="FluxReel" />
+    <span>Flux<span class="text-gradient">Reel</span></span>
+  </a>
+
+  <div class="tabs">
+    <button type="button" class="tab active" id="tab-login">Entrar</button>
+    <button type="button" class="tab" id="tab-signup">Criar conta</button>
+  </div>
+
+  <button type="button" class="google-btn" id="google-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.82Z"></path>
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.11A12 12 0 0 0 12 24Z"></path>
+      <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.61H1.26A12 12 0 0 0 0 12c0 1.94.46 3.77 1.26 5.39l4.01-3.11Z"></path>
+      <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.61 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.26 6.61l4.01 3.11C6.22 6.88 8.87 4.77 12 4.77Z"></path>
+    </svg>
+    <span id="google-btn-label">Continuar com Google</span>
+  </button>
+
+  <div class="divider">ou</div>
+
+  <div class="form-error" id="form-error"></div>
+  <div class="form-success" id="form-success"></div>
+
+  <form id="auth-form">
+    <div class="field" data-only-signup>
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" name="nome" autocomplete="name" />
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" autocomplete="email" required />
+    </div>
+    <div class="field">
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" name="senha" autocomplete="current-password" minlength="8" required />
+      <span class="hint" data-only-signup>Mínimo de 8 caracteres.</span>
+    </div>
+    <button type="submit" class="submit-btn" id="submit-btn">Entrar</button>
+  </form>
+
+  <a class="back-link" href="/index.html">Voltar para a página inicial</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+  var body = document.body;
+  var tabLogin = document.getElementById('tab-login');
+  var tabSignup = document.getElementById('tab-signup');
+  var submitBtn = document.getElementById('submit-btn');
+  var googleLabel = document.getElementById('google-btn-label');
+  var nomeInput = document.getElementById('nome');
+  var senhaInput = document.getElementById('senha');
+  var errorBox = document.getElementById('form-error');
+  var successBox = document.getElementById('form-success');
+
+  function setMode(mode) {
+    var isSignup = mode === 'signup';
+    body.classList.toggle('mode-signup', isSignup);
+    tabLogin.classList.toggle('active', !isSignup);
+    tabSignup.classList.toggle('active', isSignup);
+    submitBtn.textContent = isSignup ? 'Criar conta' : 'Entrar';
+    googleLabel.textContent = isSignup ? 'Cadastrar com Google' : 'Continuar com Google';
+    senhaInput.setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
+    nomeInput.required = isSignup;
+    hideMessages();
+  }
+
+  function hideMessages() {
+    errorBox.classList.remove('show');
+    successBox.classList.remove('show');
+  }
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('show');
+    successBox.classList.remove('show');
+  }
+
+  function showSuccess(msg) {
+    successBox.textContent = msg;
+    successBox.classList.add('show');
+    errorBox.classList.remove('show');
+  }
+
+  tabLogin.addEventListener('click', function () { setMode('login'); });
+  tabSignup.addEventListener('click', function () { setMode('signup'); });
+
+  var initialMode = new URLSearchParams(window.location.search).get('mode');
+  if (initialMode === 'signup') setMode('signup');
+
+  document.getElementById('google-btn').addEventListener('click', function () {
+    signInWithGoogle();
+  });
+
+  document.getElementById('auth-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideMessages();
+
+    var isSignup = body.classList.contains('mode-signup');
+    var email = document.getElementById('email').value.trim();
+    var senha = senhaInput.value;
+    var nome = nomeInput.value.trim();
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = isSignup ? 'Criando conta...' : 'Entrando...';
+
+    var result = isSignup
+      ? await signUpWithEmail(nome, email, senha)
+      : await signInWithEmail(email, senha);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = isSignup ? 'Criar conta' : 'Entrar';
+
+    if (result.error) {
+      showError(result.error.message || 'Algo deu errado. Tente novamente.');
+      return;
+    }
+
+    if (isSignup) {
+      showSuccess('Conta criada! Confira seu e-mail para confirmar o cadastro, se a confirmação estiver ativada no projeto.');
+    } else {
+      window.location.href = REDIRECT_AFTER_LOGIN;
+    }
+  });
+</script>
+
+</body>
+</html>

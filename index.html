@@ -455,7 +455,7 @@
     </a>
     <div class="header-actions">
       <div class="google-btn-wrap">
-        <button type="button" class="btn btn-white google-btn">
+        <button type="button" class="btn btn-white google-btn" id="header-google-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.82Z"></path>
             <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.11A12 12 0 0 0 12 24Z"></path>
@@ -465,7 +465,7 @@
           Entrar com Google
         </button>
       </div>
-      <a class="btn btn-gradient header-cta" href="/login?mode=signup">Começar agora</a>
+      <a class="btn btn-gradient header-cta" href="/login.html?mode=signup">Começar agora</a>
     </div>
   </div>
 </header>
@@ -488,7 +488,7 @@
       <h1>Vídeos virais no<br />piloto automático,<br />sem precisar<br />aparecer</h1>
       <p class="lede">A IA cria seus vídeos todos os dias. Você só posta.</p>
       <div class="hero-cta">
-        <a class="btn btn-gradient" href="/login?mode=signup">Criar meu primeiro vídeo</a>
+        <a class="btn btn-gradient" href="/login.html?mode=signup">Criar meu primeiro vídeo</a>
       </div>
       <p class="hero-sub">Primeiro vídeo pronto em menos de 5 minutos.</p>
       <a href="#estilos" class="hero-anchor">
@@ -777,7 +777,7 @@
       </div>
 
       <div class="steps-cta">
-        <a class="btn btn-gradient" href="/login?mode=signup">Criar meu primeiro vídeo</a>
+        <a class="btn btn-gradient" href="/login.html?mode=signup">Criar meu primeiro vídeo</a>
       </div>
     </div>
   </section>
@@ -914,7 +914,7 @@
   // Pool de clipes curtos e genéricos que giram por trás de cada card
   // (o poster é que muda por estilo). Ajuste PREVIEW_POOL_SIZE conforme a
   // quantidade real de preview_N.mp4 que você tiver disponível.
-  var PREVIEW_POOL_SIZE = 8;
+  var PREVIEW_POOL_SIZE = 5;
   var marquee = document.getElementById('styles-marquee');
   var loopedStyles = styles.concat(styles);
   marquee.innerHTML = loopedStyles.map(function (item, i) {
@@ -963,6 +963,18 @@
   document.getElementById('carousel-prev').addEventListener('click', function () { goTo(current - 1); });
   document.getElementById('carousel-next').addEventListener('click', function () { goTo(current + 1); });
   renderDots();
+</script>
+
+<!-- Autenticação (Google via Supabase) — configure as chaves em /auth.js -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+  var headerGoogleBtn = document.getElementById('header-google-btn');
+  if (headerGoogleBtn) {
+    headerGoogleBtn.addEventListener('click', function () {
+      signInWithGoogle();
+    });
+  }
 </script>
 
 </body>
