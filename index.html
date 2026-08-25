@@ -241,7 +241,10 @@
     background: #1a1a22;
   }
   @media (min-width: 768px) { .style-card { width: 260px; } }
-  .style-card img { height: 100%; width: 100%; object-fit: cover; }
+  .style-card img,
+  .style-card video { height: 100%; width: 100%; object-fit: cover; transition: transform 0.3s ease; }
+  .style-card:hover img,
+  .style-card:hover video { transform: scale(1.05); }
   .style-card .fade {
     position: absolute; inset: 0;
     background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%);
@@ -279,7 +282,8 @@
     background: rgba(255,255,255,0.1);
   }
   .slide-cell { position: relative; aspect-ratio: 9 / 16; background: #1a1a22; }
-  .slide-cell img { height: 100%; width: 100%; object-fit: cover; }
+  .slide-cell img,
+  .slide-cell video { height: 100%; width: 100%; object-fit: cover; }
   .pin-tag {
     position: absolute; left: 8px; top: 8px;
     border-radius: 4px; background: #e11d48; color: #fff;
@@ -907,13 +911,18 @@
     ['realism', 'Realism'],
     ['fantastic', 'Fantastic']
   ];
+  // Pool de clipes curtos e genéricos que giram por trás de cada card
+  // (o poster é que muda por estilo). Ajuste PREVIEW_POOL_SIZE conforme a
+  // quantidade real de preview_N.mp4 que você tiver disponível.
+  var PREVIEW_POOL_SIZE = 5;
   var marquee = document.getElementById('styles-marquee');
   var loopedStyles = styles.concat(styles);
-  marquee.innerHTML = loopedStyles.map(function (item) {
+  marquee.innerHTML = loopedStyles.map(function (item, i) {
     var slug = item[0], label = item[1];
+    var previewNum = (i % PREVIEW_POOL_SIZE) + 1;
     return '' +
       '<button type="button" class="style-card">' +
-        '<img src="/style-previews/' + slug + '.webp" alt="" draggable="false" loading="lazy" />' +
+        '<video src="/style-previews/preview_' + previewNum + '.mp4" poster="/style-previews/' + slug + '.webp" autoplay loop muted playsinline preload="auto"></video>' +
         '<div class="fade"></div>' +
         '<span class="label">' + label + '</span>' +
       '</button>';
