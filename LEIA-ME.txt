@@ -1,0 +1,75 @@
+FluxReel — site (clone rebrandizado)
+=====================================
+
+O que está pronto
+------------------
+- index.html: página completa, com o mesmo layout/estrutura do site de referência,
+  já com a marca FluxReel (nome, logo, paleta de cores #4F6BFF / #20D9FF / #080B18).
+- logo-icon.webp: o ícone da sua logo, já recortado e convertido para .webp,
+  usado no cabeçalho e no rodapé.
+- CSS 100% próprio (sem depender de framework externo tipo Tailwind CDN), então o
+  site carrega rápido e funciona offline/local sem depender de internet para o
+  visual básico.
+- Totalmente responsivo (testado em desktop e mobile) e com a mesma disposição de
+  elementos do site original em cada breakpoint.
+- Espaço reservado para o Pixel do Facebook: procure por "META PIXEL" no <head>
+  do index.html e cole o script gerado pelo Gerenciador de Eventos ali dentro dos
+  comentários. Tem também um bloco de <noscript> comentado logo antes do
+  </body>, é só descomentar e trocar o SEU_PIXEL_ID.
+
+Imagens que faltam
+-------------------
+Os vídeos foram mantidos exatamente como no site original (os arquivos .mp4
+não precisam ser trocados, só o /how-it-works/passo1.mp4).
+
+Todas as IMAGENS foram renomeadas para .webp mantendo o nome original, mas os
+arquivos em si ainda não existem — é só colocar os arquivos reais nas mesmas
+pastas/nomes abaixo (na raiz do site, ao lado do index.html):
+
+  /logo-icon.webp                          -> já incluído
+  /avatars/avatar_4.webp
+  /avatars/avatar_6.webp
+  /avatars/avatar_7.webp
+  /avatars/avatar_8.webp
+  /testimonial-avatars/tom_atemba.webp
+  /style-previews/comic.webp
+  /style-previews/creepy-comic.webp
+  /style-previews/modern-cartoon.webp
+  /style-previews/disney.webp
+  /style-previews/mythology.webp
+  /style-previews/pixel-art.webp
+  /style-previews/ghibli.webp
+  /style-previews/anime.webp
+  /style-previews/painting.webp
+  /style-previews/dark-fantasy.webp
+  /style-previews/lego.webp
+  /style-previews/realism.webp
+  /style-previews/fantastic.webp
+  /social-proof/terror-1-rua.webp
+  /social-proof/terror-2-menino.webp
+  /social-proof/terror-3-menina.webp
+  /social-proof/historia-1.webp
+  /social-proof/historia-2.webp
+  /social-proof/historia-3.webp
+  /social-proof/mitologia-1.webp
+  /social-proof/mitologia-2.webp
+  /social-proof/mitologia-3.webp
+  /channel-logos/canal-terror.webp
+  /channel-logos/canal-historia.webp
+  /channel-logos/canal-mitologia.webp
+  /monetization-examples/img-1.webp
+  /monetization-examples/img-2.webp
+  /monetization-examples/img-3.webp
+  /monetization-examples/img-4.webp
+  /rpm-examples/rpm-1.webp
+  /rpm-examples/rpm-2.webp
+  /rpm-examples/rpm-3.webp
+  /how-it-works/passo1.webp   (poster do vídeo do Passo 1)
+  /how-it-works/passo2.webp
+  /how-it-works/passo3.webp
+  /how-it-works/passo1.mp4    (vídeo — mantenha o mesmo do site original)
+
+Obs.: os slides 2 e 3 do carrossel "A gente entrega views" (História e
+Mitologia) são novos, criados para dar mais variedade ao carrossel — troque os
+nomes de arquivo/canal à vontade, ou apague o bloco se preferir manter só 1
+slide.

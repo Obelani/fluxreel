@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FluxReel — A IA cria seus vídeos virais. Você só posta.</title>
+<meta name="description" content="Escolha um nicho e a FluxReel gera roteiro, narração, visual e legendas dos seus vídeos curtos todos os dias. Sem aparecer, sem editar, sem depender de editor." />
+<link rel="icon" href="/logo-icon.webp" type="image/webp" />
+<link rel="apple-touch-icon" href="/logo-icon.webp" />
+
+<!-- ==================== META PIXEL (FACEBOOK) ====================
+     Cole aqui o snippet padrão do Pixel do Facebook (Gerenciador de Eventos > Configurar Pixel > Instalar código manualmente).
+     Deixe este bloco como está e apenas insira o script entre os comentários abaixo.
+================================================================= -->
+<!-- Meta Pixel Code -->
+
+<!-- Cole aqui o script do Pixel -->
+
+<!-- End Meta Pixel Code -->
+
+<style>
+  :root {
+    --brand-blue: #4F6BFF;
+    --brand-cyan: #20D9FF;
+    --brand-dark: #080B18;
+    --text-primary: #f5f5f7;
+    --text-muted: #9a9aa5;
+    --text-faint: #6b6b76;
+    --border-soft: rgba(255,255,255,0.10);
+    --surface-1: rgba(255,255,255,0.02);
+    --surface-2: rgba(255,255,255,0.03);
+    --surface-3: rgba(255,255,255,0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    min-height: 100%;
+    background: var(--brand-dark);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  img, video { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .container {
+    width: 100%;
+    max-width: 1152px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(90deg, var(--brand-blue) 0%, #6A5CFF 45%, var(--brand-cyan) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn-gradient {
+    background-image: linear-gradient(90deg, var(--brand-blue) 0%, #6A5CFF 50%, var(--brand-cyan) 100%);
+    color: #fff;
+    box-shadow: 0 10px 30px -10px rgba(79,107,255,0.45);
+  }
+  .btn-gradient:hover { opacity: 0.9; }
+  .btn-white {
+    background: #fff;
+    color: #18181b;
+    border: 1px solid rgba(255,255,255,0.15);
+    gap: 8px;
+  }
+  .btn-white:hover { background: #e4e4e7; }
+
+  /* ---------- Header ---------- */
+  header.site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    background: rgba(8,11,24,0.7);
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    max-width: 1152px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .logo-link { display: flex; align-items: center; gap: 8px; }
+  .logo-icon { height: 32px; width: 32px; flex-shrink: 0; border-radius: 8px; }
+  .logo-text { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .google-btn-wrap { display: none; }
+  .header-cta { height: 38px; padding: 0 16px; font-size: 14px; }
+  .google-btn { height: 38px; padding: 0 16px; font-size: 14px; }
+
+  @media (min-width: 640px) {
+    .google-btn-wrap { display: block; }
+  }
+
+  /* ---------- Hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero-glow {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 50% at 50% 0%, rgba(79,107,255,0.22), transparent 70%);
+  }
+  .hero-inner {
+    position: relative;
+    max-width: 1152px;
+    margin: 0 auto;
+    padding: 112px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  @media (min-width: 768px) {
+    .hero-inner { padding: 144px 24px 80px; }
+  }
+  .badge {
+    margin-bottom: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-soft);
+    background: rgba(255,255,255,0.05);
+    padding: 6px 16px 6px 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #d4d4d8;
+  }
+  .avatar-stack { display: flex; }
+  .avatar-stack img {
+    height: 24px; width: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--brand-dark);
+    object-fit: cover;
+    margin-left: -8px;
+  }
+  .avatar-stack img:first-child { margin-left: 0; }
+
+  .hero h1 {
+    font-size: clamp(38px, 9vw, 76px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin: 0;
+  }
+  .hero p.lede {
+    margin-top: 24px;
+    max-width: 42ch;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+  @media (min-width: 640px) { .hero p.lede { font-size: 19px; } }
+  .hero-cta { margin-top: 40px; }
+  .hero-cta .btn { height: 48px; padding: 0 24px; font-size: 15px; }
+  .hero-sub { margin-top: 16px; font-size: 14px; color: var(--text-faint); }
+  .hero-anchor {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    align-self: flex-start;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: #d4d4d8;
+    transition: color 0.2s ease;
+  }
+  .hero-anchor:hover { color: #fff; }
+  .hero-anchor svg { animation: bounce-arrow 1.6s ease-in-out infinite; color: var(--text-faint); }
+
+  @keyframes bounce-arrow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
+  }
+
+  /* ---------- Section spacing ---------- */
+  section { padding: 40px 0; }
+  @media (min-width: 640px) { section { padding: 80px 0; } }
+  .section-head h2 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  @media (min-width: 640px) { .section-head h2 { font-size: 48px; } }
+  .section-head p { margin-top: 12px; color: var(--text-muted); }
+
+  /* ---------- Marquee ---------- */
+  .marquee-section { padding: 0 0 40px; }
+  @media (min-width: 640px) { .marquee-section { padding: 0 0 80px; } }
+  .marquee-mask {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  }
+  .marquee-row {
+    display: flex;
+    width: max-content;
+    gap: 12px;
+    animation: marquee-left 44s linear infinite;
+  }
+  .marquee-row:hover { animation-play-state: paused; }
+  @keyframes marquee-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .style-card {
+    position: relative;
+    aspect-ratio: 9 / 16;
+    width: 200px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 2px solid var(--border-soft);
+    background: #1a1a22;
+  }
+  @media (min-width: 768px) { .style-card { width: 260px; } }
+  .style-card img { height: 100%; width: 100%; object-fit: cover; }
+  .style-card .fade {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%);
+  }
+  .style-card .label {
+    position: absolute; left: 8px; right: 8px; bottom: 8px;
+    font-size: 12px; font-weight: 500; color: #fff; text-align: left;
+  }
+  @media (min-width: 640px) { .style-card .label { font-size: 14px; } }
+
+  /* ---------- Social proof / carousel ---------- */
+  .social-proof-wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+  .social-proof-wrap .section-head { text-align: center; }
+  .carousel-nav { margin-top: 40px; display: flex; justify-content: flex-end; gap: 8px; }
+  .nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    height: 32px; width: 32px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent; color: #d4d4d8; transition: background 0.2s, color 0.2s;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .carousel-card {
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-1);
+  }
+  .carousel-slide { display: none; }
+  .carousel-slide.active { display: block; }
+  .slide-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(255,255,255,0.1);
+  }
+  .slide-cell { position: relative; aspect-ratio: 9 / 16; background: #1a1a22; }
+  .slide-cell img { height: 100%; width: 100%; object-fit: cover; }
+  .pin-tag {
+    position: absolute; left: 8px; top: 8px;
+    border-radius: 4px; background: #e11d48; color: #fff;
+    padding: 2px 8px; font-size: 12px; font-weight: 600;
+  }
+  .view-tag {
+    position: absolute; left: 8px; bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: #fff;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  }
+  .slide-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px 16px;
+  }
+  .channel-info { display: flex; align-items: center; gap: 12px; }
+  .channel-info img { height: 40px; width: 40px; border-radius: 999px; object-fit: cover; }
+  .channel-name { font-size: 14px; font-weight: 600; color: #fff; }
+  .channel-handle { font-size: 12px; color: var(--text-muted); }
+  .dots { display: flex; align-items: center; gap: 6px; }
+  .dot { height: 6px; width: 6px; border-radius: 999px; border: none; background: rgba(255,255,255,0.25); transition: background 0.2s; }
+  .dot.active { background: #fff; }
+  .dot:hover { background: rgba(255,255,255,0.5); }
+  .disclaimer { margin-top: 24px; text-align: center; font-size: 12px; color: var(--text-faint); }
+
+  /* ---------- Monetization ---------- */
+  .money-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  @media (min-width: 1024px) { .money-grid { grid-template-columns: repeat(4, 1fr); } }
+  .money-card {
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-1);
+  }
+  .money-card .thumb { position: relative; aspect-ratio: 4 / 5; background: #1a1a22; }
+  .money-card .thumb img { height: 100%; width: 100%; object-fit: cover; }
+  .money-card .body { padding: 16px; }
+  .money-views { font-size: 13px; color: var(--text-muted); }
+  .money-views span { color: var(--text-faint); }
+  .money-rpm { font-size: 13px; color: var(--text-faint); }
+  .money-value { margin-top: 8px; font-size: 20px; font-weight: 600; color: #34d399; }
+  .money-usd { font-size: 12px; color: var(--text-faint); }
+  .money-note { margin-top: 24px; font-size: 14px; color: var(--text-faint); }
+
+  .rpm-block { margin-top: 40px; }
+  @media (min-width: 640px) { .rpm-block { margin-top: 80px; } }
+  .rpm-grid {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) { .rpm-grid { grid-template-columns: repeat(3, 1fr); } }
+  .rpm-grid > div {
+    overflow: hidden; border-radius: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-2);
+    aspect-ratio: 4 / 3;
+  }
+  .rpm-grid > div img { width: 100%; height: 100%; object-fit: cover; }
+  .rpm-note { margin-top: 16px; font-size: 12px; color: var(--text-faint); }
+
+  /* ---------- Testimonials ---------- */
+  .testi-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) { .testi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .testi-grid { grid-template-columns: repeat(3, 1fr); } }
+  .testi-card {
+    border-radius: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-2);
+    padding: 24px;
+  }
+  .testi-card p { margin: 0; font-size: 14px; line-height: 1.6; color: #d4d4d8; }
+  .testi-person { margin-top: 20px; display: flex; align-items: center; gap: 12px; }
+  .testi-person img { height: 36px; width: 36px; border-radius: 999px; object-fit: cover; }
+  .testi-name { font-size: 14px; font-weight: 500; }
+  .testi-role { font-size: 12px; color: var(--text-faint); }
+
+  /* ---------- How it works ---------- */
+  .steps { display: flex; flex-direction: column; gap: 64px; }
+  @media (min-width: 768px) { .steps { gap: 96px; } }
+  .step {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
+    gap: 32px;
+  }
+  @media (min-width: 768px) {
+    .step { grid-template-columns: 1fr 1fr; gap: 64px; }
+    .step.reverse .step-media { order: -1; }
+  }
+  .step-eyebrow { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin: 0; }
+  .step-title { margin-top: 12px; font-size: 22px; font-weight: 600; }
+  .step-text { margin-top: 12px; max-width: 36ch; color: var(--text-muted); }
+  .step-media {
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-1);
+    padding: 12px;
+  }
+  @media (min-width: 768px) { .step-media { padding: 16px; } }
+  .step-media .frame {
+    aspect-ratio: 16 / 10;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+  }
+  .step-media .frame img,
+  .step-media .frame video { height: 100%; width: 100%; object-fit: cover; }
+  .steps-cta { margin-top: 56px; display: flex; justify-content: center; }
+  .steps-cta .btn { height: 48px; padding: 0 24px; font-size: 15px; }
+
+  /* ---------- FAQ ---------- */
+  .faq-section { border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); background: var(--surface-1); }
+  .faq-wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+  .faq-wrap .section-head { text-align: center; }
+  .faq-list { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; }
+  .faq-item { border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1); }
+  .faq-question {
+    display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 16px 20px; text-align: left; background: none; border: none; color: inherit;
+  }
+  .faq-question span.q-text { font-size: 15px; font-weight: 500; }
+  .faq-icon { flex-shrink: 0; color: var(--text-muted); transition: transform 0.2s ease; font-size: 18px; line-height: 1; }
+  .faq-item.open .faq-icon { transform: rotate(45deg); }
+  .faq-answer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.25s ease; }
+  .faq-answer > div { overflow: hidden; }
+  .faq-item.open .faq-answer { grid-template-rows: 1fr; }
+  .faq-answer p { margin: 0; padding: 0 20px 16px; font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ---------- Footer ---------- */
+  footer.site-footer { padding: 40px 0; }
+  @media (min-width: 768px) { footer.site-footer { padding: 56px 0; } }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  @media (min-width: 768px) { .footer-grid { grid-template-columns: repeat(4, 1fr); gap: 40px; } }
+  .footer-brand { grid-column: span 3 / span 3; }
+  @media (min-width: 768px) { .footer-brand { grid-column: span 1 / span 1; } }
+  .footer-brand p { margin-top: 12px; max-width: 20rem; font-size: 14px; color: var(--text-faint); }
+  .footer-col-title { font-size: 14px; font-weight: 500; color: #fff; }
+  .footer-col ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .footer-col a { font-size: 14px; color: var(--text-faint); transition: color 0.2s ease; }
+  .footer-col a:hover { color: #fff; }
+  .footer-bottom { margin-top: 32px; font-size: 12px; color: #52525b; }
+  @media (min-width: 768px) { .footer-bottom { margin-top: 48px; } }
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo-link" href="/">
+      <img src="/logo-icon.webp" alt="FluxReel" class="logo-icon" />
+      <span class="logo-text">Flux<span class="text-gradient">Reel</span></span>
+    </a>
+    <div class="header-actions">
+      <div class="google-btn-wrap">
+        <button type="button" class="btn btn-white google-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.82Z"></path>
+            <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.11A12 12 0 0 0 12 24Z"></path>
+            <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.61H1.26A12 12 0 0 0 0 12c0 1.94.46 3.77 1.26 5.39l4.01-3.11Z"></path>
+            <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.61 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.26 6.61l4.01 3.11C6.22 6.88 8.87 4.77 12 4.77Z"></path>
+          </svg>
+          Entrar com Google
+        </button>
+      </div>
+      <a class="btn btn-gradient header-cta" href="/login?mode=signup">Começar agora</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ==================== HERO ==================== -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="badge">
+        <div class="avatar-stack">
+          <img src="/avatars/avatar_6.webp" alt="" draggable="false" />
+          <img src="/avatars/avatar_7.webp" alt="" draggable="false" />
+          <img src="/avatars/avatar_4.webp" alt="" draggable="false" />
+          <img src="/avatars/avatar_8.webp" alt="" draggable="false" />
+        </div>
+        Mais de 300 criadores
+      </div>
+      <h1>Vídeos virais no<br />piloto automático,<br />sem precisar<br />aparecer</h1>
+      <p class="lede">A IA cria seus vídeos todos os dias. Você só posta.</p>
+      <div class="hero-cta">
+        <a class="btn btn-gradient" href="/login?mode=signup">Criar meu primeiro vídeo</a>
+      </div>
+      <p class="hero-sub">Primeiro vídeo pronto em menos de 5 minutos.</p>
+      <a href="#estilos" class="hero-anchor">
+        Nossos estilos de vídeo virais
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ==================== ESTILOS (MARQUEE) ==================== -->
+  <section id="estilos" class="marquee-section">
+    <div class="marquee-mask">
+      <div class="marquee-row" id="styles-marquee"></div>
+    </div>
+  </section>
+
+  <!-- ==================== A GENTE ENTREGA VIEWS ==================== -->
+  <section>
+    <div class="social-proof-wrap">
+      <div class="section-head">
+        <h2>A gente entrega views</h2>
+        <p>Canais rodando com criação 100% automatizada pela IA.</p>
+      </div>
+
+      <div class="carousel-nav">
+        <button type="button" id="carousel-prev" aria-label="Canal anterior" class="nav-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+        <button type="button" id="carousel-next" aria-label="Próximo canal" class="nav-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+
+      <div class="carousel-card">
+        <div id="carousel-track">
+
+          <!-- Slide 1 -->
+          <div class="carousel-slide active" data-slide="0">
+            <div class="slide-grid">
+              <div class="slide-cell">
+                <img src="/social-proof/terror-1-rua.webp" alt="" draggable="false" loading="lazy" />
+                <span class="pin-tag">Fixado</span>
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>1,4M</span>
+              </div>
+              <div class="slide-cell">
+                <img src="/social-proof/terror-2-menino.webp" alt="" draggable="false" loading="lazy" />
+                <span class="pin-tag">Fixado</span>
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>223K</span>
+              </div>
+              <div class="slide-cell">
+                <img src="/social-proof/terror-3-menina.webp" alt="" draggable="false" loading="lazy" />
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>3.997</span>
+              </div>
+            </div>
+            <div class="slide-footer">
+              <div class="channel-info">
+                <img src="/channel-logos/canal-terror.webp" alt="" draggable="false" loading="lazy" />
+                <div>
+                  <div class="channel-name">Canal de Terror</div>
+                  <div class="channel-handle">@canal.terror</div>
+                </div>
+              </div>
+              <div class="dots" id="carousel-dots"></div>
+            </div>
+          </div>
+
+          <!-- Slide 2 -->
+          <div class="carousel-slide" data-slide="1">
+            <div class="slide-grid">
+              <div class="slide-cell">
+                <img src="/social-proof/historia-1.webp" alt="" draggable="false" loading="lazy" />
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>982K</span>
+              </div>
+              <div class="slide-cell">
+                <img src="/social-proof/historia-2.webp" alt="" draggable="false" loading="lazy" />
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>410K</span>
+              </div>
+              <div class="slide-cell">
+                <img src="/social-proof/historia-3.webp" alt="" draggable="false" loading="lazy" />
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>1.2M</span>
+              </div>
+            </div>
+            <div class="slide-footer">
+              <div class="channel-info">
+                <img src="/channel-logos/canal-historia.webp" alt="" draggable="false" loading="lazy" />
+                <div>
+                  <div class="channel-name">Canal de História</div>
+                  <div class="channel-handle">@canal.historia</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 3 -->
+          <div class="carousel-slide" data-slide="2">
+            <div class="slide-grid">
+              <div class="slide-cell">
+                <img src="/social-proof/mitologia-1.webp" alt="" draggable="false" loading="lazy" />
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>2.1M</span>
+              </div>
+              <div class="slide-cell">
+                <img src="/social-proof/mitologia-2.webp" alt="" draggable="false" loading="lazy" />
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>630K</span>
+              </div>
+              <div class="slide-cell">
+                <img src="/social-proof/mitologia-3.webp" alt="" draggable="false" loading="lazy" />
+                <span class="view-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4v16l13-8Z"></path></svg>89K</span>
+              </div>
+            </div>
+            <div class="slide-footer">
+              <div class="channel-info">
+                <img src="/channel-logos/canal-mitologia.webp" alt="" draggable="false" loading="lazy" />
+                <div>
+                  <div class="channel-name">Canal de Mitologia</div>
+                  <div class="channel-handle">@canal.mitologia</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <p class="disclaimer">Exemplos ilustrativos de canais e desempenho. Resultados reais variam conforme constância, nicho e algoritmo de cada plataforma.</p>
+    </div>
+  </section>
+
+  <!-- ==================== E QUANTO ISSO RENDE ==================== -->
+  <section>
+    <div class="container">
+      <div class="section-head" style="margin-bottom:24px;">
+        <h2>E quanto isso rende?</h2>
+        <p style="max-width:42rem;">Assumindo um RPM médio de US$ 1,00 (uma estimativa razoável), esse é o potencial ilustrativo pra vídeos com o desempenho abaixo:</p>
+      </div>
+      <div class="money-grid">
+        <div class="money-card">
+          <div class="thumb"><img src="/monetization-examples/img-1.webp" alt="" draggable="false" loading="lazy" /></div>
+          <div class="body">
+            <div class="money-views">6,6M <span>views</span></div>
+            <div class="money-rpm">× RPM US$ 1.00</div>
+            <div class="money-value">R$ 33.000,00</div>
+            <div class="money-usd">$ 6,600 dólares</div>
+          </div>
+        </div>
+        <div class="money-card">
+          <div class="thumb"><img src="/monetization-examples/img-2.webp" alt="" draggable="false" loading="lazy" /></div>
+          <div class="body">
+            <div class="money-views">5,2M <span>views</span></div>
+            <div class="money-rpm">× RPM US$ 1.00</div>
+            <div class="money-value">R$ 26.000,00</div>
+            <div class="money-usd">$ 5,200 dólares</div>
+          </div>
+        </div>
+        <div class="money-card">
+          <div class="thumb"><img src="/monetization-examples/img-3.webp" alt="" draggable="false" loading="lazy" /></div>
+          <div class="body">
+            <div class="money-views">3,6M <span>views</span></div>
+            <div class="money-rpm">× RPM US$ 1.00</div>
+            <div class="money-value">R$ 18.000,00</div>
+            <div class="money-usd">$ 3,600 dólares</div>
+          </div>
+        </div>
+        <div class="money-card">
+          <div class="thumb"><img src="/monetization-examples/img-4.webp" alt="" draggable="false" loading="lazy" /></div>
+          <div class="body">
+            <div class="money-views">747,4K <span>views</span></div>
+            <div class="money-rpm">× RPM US$ 1.00</div>
+            <div class="money-value">R$ 3.735,00</div>
+            <div class="money-usd">$ 747 dólares</div>
+          </div>
+        </div>
+      </div>
+      <p class="money-note">Estimativa ilustrativa com RPM médio de US$ 1,00 por mil views. O valor real varia por nicho, país e época do ano — e nem todo vídeo viraliza.</p>
+
+      <div class="rpm-block">
+        <div class="section-head">
+          <h2>O que é RPM?</h2>
+          <p style="max-width:42rem;">Views viram dinheiro no Facebook, YouTube e TikTok. Essas plataformas pagam de 50 centavos de dólar até 2 dólares por mil visualizações (o nome disso é RPM).</p>
+        </div>
+        <div class="rpm-grid">
+          <div><img src="/rpm-examples/rpm-1.webp" alt="" draggable="false" loading="lazy" /></div>
+          <div><img src="/rpm-examples/rpm-2.webp" alt="" draggable="false" loading="lazy" /></div>
+          <div><img src="/rpm-examples/rpm-3.webp" alt="" draggable="false" loading="lazy" /></div>
+        </div>
+        <p class="rpm-note">Capturas reais de RPM em diferentes períodos — o valor varia bastante conforme o nicho, o país da audiência e a época do ano.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== DEPOIMENTOS ==================== -->
+  <section>
+    <div class="container">
+      <div class="section-head" style="text-align:center; margin-bottom:24px;">
+        <h2>Quem usa, não volta atrás</h2>
+      </div>
+      <div class="testi-grid">
+        <div class="testi-card">
+          <p>"Eu travava toda semana tentando editar. Agora só reviso o que a IA gera e publico — meu maior gargalo sumiu."</p>
+          <div class="testi-person">
+            <img src="/avatars/avatar_6.webp" alt="" draggable="false" loading="lazy" />
+            <div><div class="testi-name">Rafael M.</div><div class="testi-role">Canal de curiosidades</div></div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <p>"É praticamente hands-off. Configuro a série uma vez e os vídeos aparecem prontos todo santo dia."</p>
+          <div class="testi-person">
+            <img src="/avatars/avatar_7.webp" alt="" draggable="false" loading="lazy" />
+            <div><div class="testi-name">Bianca S.</div><div class="testi-role">Canal de motivação</div></div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <p>"Consigo manter a mesma estética em todos os vídeos, o que antes era impossível gerenciando sozinho."</p>
+          <div class="testi-person">
+            <img src="/avatars/avatar_4.webp" alt="" draggable="false" loading="lazy" />
+            <div><div class="testi-name">Diego A.</div><div class="testi-role">3 canais simultâneos</div></div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <p>"Gerencio três canais diferentes sem contratar ninguém. Antes isso exigiria uma equipe inteira."</p>
+          <div class="testi-person">
+            <img src="/avatars/avatar_8.webp" alt="" draggable="false" loading="lazy" />
+            <div><div class="testi-name">Camila R.</div><div class="testi-role">Canal de histórias</div></div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <p>"A constância mudou o jogo. Postar todo dia sem falhar foi o que finalmente destravou o algoritmo pra mim."</p>
+          <div class="testi-person">
+            <img src="/testimonial-avatars/tom_atemba.webp" alt="" draggable="false" loading="lazy" />
+            <div><div class="testi-name">Thiago L.</div><div class="testi-role">Canal de finanças</div></div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <p>"Testei três ferramentas antes. A diferença é a qualidade do roteiro — não parece genérico."</p>
+          <div class="testi-person">
+            <img src="/avatars/avatar_6.webp" alt="" draggable="false" loading="lazy" />
+            <div><div class="testi-name">Ana P.</div><div class="testi-role">Canal de mitologia</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== COMO FUNCIONA ==================== -->
+  <section id="como-funciona" style="scroll-margin-top:64px;">
+    <div class="container">
+      <div class="steps">
+
+        <div class="step reverse">
+          <div>
+            <p class="step-eyebrow">Passo 1</p>
+            <h3 class="step-title">Crie uma série</h3>
+            <p class="step-text">Escolha o nicho, o tom de voz e o estilo visual. Leva menos de 2 minutos.</p>
+          </div>
+          <div class="step-media">
+            <div class="frame">
+              <video src="/how-it-works/passo1.mp4" poster="/how-it-works/passo1.webp" autoplay loop muted playsinline></video>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div>
+            <p class="step-eyebrow">Passo 2</p>
+            <h3 class="step-title">A IA gera os vídeos</h3>
+            <p class="step-text">Roteiro, narração, visual e legendas prontos automaticamente, todos os dias.</p>
+          </div>
+          <div class="step-media">
+            <div class="frame">
+              <img src="/how-it-works/passo2.webp" alt="" draggable="false" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+        <div class="step reverse">
+          <div>
+            <p class="step-eyebrow">Passo 3</p>
+            <h3 class="step-title">Você revisa e posta</h3>
+            <p class="step-text">Aprove com um clique, baixe ou publique direto nas suas redes conectadas.</p>
+          </div>
+          <div class="step-media">
+            <div class="frame">
+              <img src="/how-it-works/passo3.webp" alt="" draggable="false" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="steps-cta">
+        <a class="btn btn-gradient" href="/login?mode=signup">Criar meu primeiro vídeo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FAQ ==================== -->
+  <section id="faq" class="faq-section">
+    <div class="faq-wrap">
+      <div class="section-head">
+        <h2>Perguntas frequentes</h2>
+      </div>
+      <div class="faq-list" id="faq-list">
+
+        <div class="faq-item open">
+          <button type="button" class="faq-question" aria-expanded="true">
+            <span class="q-text">O que é uma "série"?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><div><p>É a configuração do seu canal: nicho, tom de voz, estilo visual e formato. A partir dela, a IA gera vídeos novos automaticamente todos os dias.</p></div></div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span class="q-text">Preciso saber editar vídeo?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><div><p>Não. A FluxReel cuida do roteiro, da narração, do visual e das legendas. Você só revisa e publica.</p></div></div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span class="q-text">Funciona pra quais plataformas?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><div><p>Instagram Reels, TikTok, YouTube Shorts e Facebook — formato vertical pronto para cada uma.</p></div></div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span class="q-text">Minhas contas de rede social ficam seguras?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><div><p>Sim. A conexão com suas redes usa autenticação oficial das plataformas — a FluxReel nunca armazena sua senha.</p></div></div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span class="q-text">Dá pra gerar em outros idiomas?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><div><p>Sim, você pode escolher o idioma da narração e das legendas na configuração da série.</p></div></div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span class="q-text">Existe limite de vídeos por mês?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><div><p>Cada plano tem uma cota mensal de vídeos. Você pode fazer upgrade a qualquer momento se precisar de mais.</p></div></div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span class="q-text">Posso cancelar quando quiser?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><div><p>Sim, sem multa e sem burocracia. O cancelamento é feito direto no seu painel.</p></div></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="logo-link" href="/">
+          <img src="/logo-icon.webp" alt="FluxReel" class="logo-icon" />
+          <span class="logo-text">Flux<span class="text-gradient">Reel</span></span>
+        </a>
+        <p>Vídeos curtos gerados por IA, todos os dias, sem editor e sem aparecer.</p>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Produto</div>
+        <ul>
+          <li><a href="#como-funciona">Como funciona</a></li>
+          <li><a href="#estilos">Estilos</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Empresa</div>
+        <ul>
+          <li><a href="#">Sobre</a></li>
+          <li><a href="#">Contato</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Legal</div>
+        <ul>
+          <li><a href="#">Termos de uso</a></li>
+          <li><a href="#">Privacidade</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 FluxReel. Todos os direitos reservados.</div>
+  </div>
+</footer>
+
+<!-- ==================== META PIXEL NOSCRIPT (deixe comentado até colar seu ID) ====================
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=SEU_PIXEL_ID&ev=PageView&noscript=1" /></noscript>
+======================================================================================================= -->
+
+<script>
+  // ---------- Estilos (marquee) ----------
+  var styles = [
+    ['comic', 'Comic'],
+    ['creepy-comic', 'Creepy Comic'],
+    ['modern-cartoon', 'Modern Cartoon'],
+    ['disney', 'Disney'],
+    ['mythology', 'Mythology'],
+    ['pixel-art', 'Pixel Art'],
+    ['ghibli', 'Ghibli'],
+    ['anime', 'Anime'],
+    ['painting', 'Painting'],
+    ['dark-fantasy', 'Dark Fantasy'],
+    ['lego', 'Lego'],
+    ['realism', 'Realism'],
+    ['fantastic', 'Fantastic']
+  ];
+  var marquee = document.getElementById('styles-marquee');
+  var loopedStyles = styles.concat(styles);
+  marquee.innerHTML = loopedStyles.map(function (item) {
+    var slug = item[0], label = item[1];
+    return '' +
+      '<button type="button" class="style-card">' +
+        '<img src="/style-previews/' + slug + '.webp" alt="" draggable="false" loading="lazy" />' +
+        '<div class="fade"></div>' +
+        '<span class="label">' + label + '</span>' +
+      '</button>';
+  }).join('');
+
+  // ---------- FAQ accordion ----------
+  document.querySelectorAll('.faq-item').forEach(function (item) {
+    var btn = item.querySelector('.faq-question');
+    btn.addEventListener('click', function () {
+      item.classList.toggle('open');
+      btn.setAttribute('aria-expanded', item.classList.contains('open'));
+    });
+  });
+
+  // ---------- Channel carousel ----------
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.carousel-slide'));
+  var dotsWrap = document.getElementById('carousel-dots');
+  var current = 0;
+
+  function renderDots() {
+    dotsWrap.innerHTML = slides.map(function (_, i) {
+      return '<button type="button" data-dot="' + i + '" aria-label="Ver canal ' + (i + 1) + '" class="dot' + (i === current ? ' active' : '') + '"></button>';
+    }).join('');
+    dotsWrap.querySelectorAll('[data-dot]').forEach(function (dot) {
+      dot.addEventListener('click', function () {
+        goTo(parseInt(dot.dataset.dot, 10));
+      });
+    });
+  }
+
+  function goTo(index) {
+    slides[current].classList.remove('active');
+    current = (index + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    renderDots();
+  }
+
+  document.getElementById('carousel-prev').addEventListener('click', function () { goTo(current - 1); });
+  document.getElementById('carousel-next').addEventListener('click', function () { goTo(current + 1); });
+  renderDots();
+</script>
+
+</body>
+</html>
