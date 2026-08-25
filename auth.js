@@ -11,8 +11,8 @@
       fazem isso na ordem certa — não mexe na ordem dos <script>.
 ================================================================ */
 
-const SUPABASE_URL = 'COLE_AQUI_SUA_PROJECT_URL'; // ex.: https://xxxxxxxx.supabase.co
-const SUPABASE_ANON_KEY = 'COLE_AQUI_SUA_ANON_KEY'; // ex.: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+const SUPABASE_URL = 'https://kbcagxxwhenqubbktsiv.supabase.co'; // ex.: https://xxxxxxxx.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiY2FneHh3aGVucXViYmt0c2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2OTE0NjUsImV4cCI6MjEwMzI2NzQ2NX0.OoTixD0NZshdE5oY7bY_0rP9ac3nYkMf9-EfYvZU7mE'; // ex.: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 // Para onde o usuário vai depois de logar com sucesso (Google ou e-mail/senha).
 // Troque para a página do seu painel/app quando ela existir.
