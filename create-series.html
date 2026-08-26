@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Criar nova série — FluxReel</title>
+<meta name="description" content="Configure sua série de vídeos virais gerados por IA em poucos passos." />
+<link rel="icon" href="/logo-icon.webp" type="image/webp" />
+<link rel="apple-touch-icon" href="/logo-icon.webp" />
+
+<style>
+  :root {
+    --brand-blue: #4F6BFF;
+    --brand-cyan: #20D9FF;
+    --brand-dark: #080B18;
+    --text-primary: #f5f5f7;
+    --text-muted: #9a9aa5;
+    --text-faint: #6b6b76;
+    --border-soft: rgba(255,255,255,0.10);
+    --surface-1: rgba(255,255,255,0.02);
+    --surface-2: rgba(255,255,255,0.03);
+    --surface-3: rgba(255,255,255,0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    min-height: 100%;
+    background: var(--brand-dark);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  img, video { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+  input { font-family: inherit; }
+
+  .text-gradient {
+    background-image: linear-gradient(90deg, var(--brand-blue) 0%, #6A5CFF 45%, var(--brand-cyan) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 999px;
+    font-weight: 500;
+    border: none;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn-gradient {
+    background-image: linear-gradient(90deg, var(--brand-blue) 0%, #6A5CFF 50%, var(--brand-cyan) 100%);
+    color: #fff;
+    box-shadow: 0 10px 30px -10px rgba(79,107,255,0.45);
+  }
+  .btn-gradient:hover { opacity: 0.92; }
+  .btn-gradient:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-outline {
+    background: transparent;
+    color: #d4d4d8;
+    border: 1px solid var(--border-soft);
+  }
+  .btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+  /* ---------- Header ---------- */
+  .app-header { border-bottom: 1px solid var(--border-soft); background: rgba(8,11,24,0.85); backdrop-filter: blur(6px); }
+  .app-header-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1000px; margin: 0 auto; padding: 16px 24px;
+  }
+  .logo-link { display: flex; align-items: center; gap: 8px; }
+  .logo-icon { height: 32px; width: 32px; flex-shrink: 0; border-radius: 8px; }
+  .logo-text { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .header-actions { display: flex; align-items: center; gap: 16px; }
+  .user-box { display: none; text-align: right; }
+  .user-box .name { font-size: 14px; font-weight: 500; }
+  .user-box .email { font-size: 12px; color: var(--text-faint); }
+  @media (min-width: 640px) { .user-box.has-session { display: block; } }
+  .btn-sair { height: 38px; padding: 0 18px; font-size: 14px; }
+
+  /* ---------- Wizard shell ---------- */
+  main { flex: 1; }
+  .wizard-wrap { max-width: 672px; margin: 0 auto; padding: 40px 24px 64px; width: 100%; }
+  .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-faint); margin-bottom: 24px; }
+  .breadcrumb a:hover { color: #d4d4d8; }
+  .breadcrumb .current { color: #d4d4d8; }
+
+  .progress-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 32px; }
+  .progress-seg { height: 6px; border-radius: 999px; background: var(--surface-3); transition: background 0.3s ease; }
+  .progress-seg.filled { background-image: linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); }
+
+  .step-head { margin-bottom: 32px; }
+  .step-head .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .step-head h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  @media (min-width: 640px) { .step-head h1 { font-size: 30px; } }
+  .badge {
+    border-radius: 999px; border: 1px solid var(--border-soft); background: var(--surface-2);
+    padding: 4px 12px; font-size: 12px; color: var(--text-muted);
+  }
+  .step-head p { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+
+  .wizard-step { display: none; }
+  .wizard-step.active { display: block; }
+
+  /* ---------- Etapa 1: nicho ---------- */
+  .niche-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (min-width: 560px) { .niche-grid { grid-template-columns: repeat(3, 1fr); } }
+  .niche-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1);
+    padding: 16px; text-align: left; transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .niche-card:hover { background: var(--surface-3); }
+  .niche-card .emoji { font-size: 22px; }
+  .niche-card .label { font-size: 14px; font-weight: 500; }
+  .niche-card.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
+  .custom-niche-input { margin-top: 16px; display: none; }
+  .custom-niche-input.show { display: block; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-size: 13px; font-weight: 500; color: #c7c7ce; }
+  .field input, .field .fake-select {
+    height: 46px; border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1);
+    color: var(--text-primary); padding: 0 14px; font-size: 14px; outline: none; transition: border-color 0.2s ease;
+    width: 100%;
+  }
+  .field input:focus { border-color: var(--brand-blue); }
+
+  /* ---------- Etapa 2/3: listas com preview de áudio ---------- */
+  .lang-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .lang-pill {
+    border-radius: 999px; border: 1px solid var(--border-soft); background: var(--surface-1);
+    padding: 8px 16px; font-size: 13px; color: var(--text-muted); transition: all 0.2s ease;
+  }
+  .lang-pill.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); color: #fff; }
+
+  .option-list { display: flex; flex-direction: column; gap: 10px; }
+  .option-row {
+    display: flex; align-items: center; gap: 14px;
+    border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1);
+    padding: 14px 16px; transition: border-color 0.2s ease, background 0.2s ease; cursor: pointer;
+  }
+  .option-row:hover { background: var(--surface-3); }
+  .option-row.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
+  .play-btn {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    height: 36px; width: 36px; border-radius: 999px; border: 1px solid var(--border-soft);
+    background: var(--surface-2); color: #fff; font-size: 13px; transition: background 0.2s ease;
+  }
+  .play-btn:hover { background: var(--surface-3); }
+  .option-row-text { flex: 1; min-width: 0; }
+  .option-row-text .name { font-size: 14px; font-weight: 600; }
+  .option-row-text .desc { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .option-row-check {
+    flex-shrink: 0; height: 20px; width: 20px; border-radius: 999px; border: 1px solid var(--border-soft);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .option-row.is-selected .option-row-check {
+    border-color: transparent; background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan));
+  }
+  .option-row.is-selected .option-row-check::after { content: "✓"; font-size: 12px; color: #fff; }
+
+  /* ---------- Etapa 4: estilo visual ---------- */
+  .style-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (min-width: 560px) { .style-grid { grid-template-columns: repeat(3, 1fr); } }
+  .style-pick-card {
+    position: relative; aspect-ratio: 9 / 16; overflow: hidden; border-radius: 12px;
+    border: 2px solid var(--border-soft); background: #1a1a22; transition: border-color 0.2s ease;
+  }
+  .style-pick-card img, .style-pick-card video { height: 100%; width: 100%; object-fit: cover; }
+  .style-pick-card .fade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.75), transparent 55%); }
+  .style-pick-card .label { position: absolute; left: 8px; right: 8px; bottom: 8px; font-size: 13px; font-weight: 500; color: #fff; }
+  .style-pick-card.is-selected { border-color: var(--brand-cyan); box-shadow: 0 0 0 3px rgba(32,217,255,0.25); }
+  .style-pick-card .check {
+    position: absolute; top: 8px; right: 8px; height: 22px; width: 22px; border-radius: 999px;
+    background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan)); color: #fff;
+    display: none; align-items: center; justify-content: center; font-size: 12px;
+  }
+  .style-pick-card.is-selected .check { display: flex; }
+
+  /* ---------- Etapa 5: legenda ---------- */
+  .caption-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 560px) { .caption-grid { grid-template-columns: repeat(2, 1fr); } }
+  .caption-card {
+    border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1);
+    padding: 16px; transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .caption-card:hover { background: var(--surface-3); }
+  .caption-card.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
+  .caption-card .cap-name { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .caption-preview {
+    display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 6px;
+    min-height: 64px; border-radius: 10px; background: #000; padding: 12px; text-align: center;
+  }
+  .caption-preview .word {
+    font-size: 15px; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.55);
+    transition: all 0.15s ease; padding: 1px 2px; border-radius: 4px;
+  }
+  .style-classic .word.active { color: #fff; text-shadow: 0 0 6px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+  .style-bold-yellow .word.active { color: #18181b; background: #FACC15; }
+  .style-neon .word.active { color: var(--brand-cyan); text-shadow: 0 0 10px rgba(32,217,255,0.9); }
+  .style-blackbox .word.active { color: #fff; background: #000; box-shadow: 0 0 0 4px #000; }
+  .style-gradient-word .word.active { background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* ---------- Etapa 6: efeitos ---------- */
+  .effects-list { display: flex; flex-direction: column; gap: 12px; }
+  .effect-card {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 16px 20px;
+  }
+  .effect-card .effect-title { display: flex; align-items: center; gap: 8px; }
+  .effect-card .effect-title span.name { font-weight: 600; }
+  .effect-badge { border-radius: 999px; border: 1px solid; padding: 2px 8px; font-size: 11px; font-weight: 500; }
+  .effect-badge.new { border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.1); color: #6ee7b7; }
+  .effect-badge.premium { border-color: rgba(245,158,11,0.2); background: rgba(245,158,11,0.1); color: #fcd34d; }
+  .effect-card p { margin: 6px 0 0; font-size: 14px; color: var(--text-muted); }
+  .switch { position: relative; flex-shrink: 0; height: 24px; width: 44px; border-radius: 999px; background: rgba(255,255,255,0.15); border: none; transition: background 0.2s ease; }
+  .switch .knob { position: absolute; left: 2px; top: 2px; height: 20px; width: 20px; border-radius: 999px; background: #fff; transition: transform 0.2s ease; }
+  .switch.is-on { background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan)); }
+  .switch.is-on .knob { transform: translateX(20px); }
+
+  /* ---------- Etapa 7 ---------- */
+  .info-box { border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 16px 20px; font-size: 14px; color: var(--text-muted); }
+  .info-box strong { color: #fff; }
+  .fake-select { display: flex; align-items: center; justify-content: space-between; position: relative; }
+  .fake-select .chev { color: var(--text-faint); }
+  .dropdown-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 5;
+    border-radius: 12px; border: 1px solid var(--border-soft); background: #111119;
+    box-shadow: 0 20px 40px -12px rgba(0,0,0,0.6); overflow: hidden; display: none;
+  }
+  .dropdown-menu.open { display: block; }
+  .dropdown-menu button { display: block; width: 100%; text-align: left; padding: 12px 14px; font-size: 14px; color: #d4d4d8; background: none; border: none; }
+  .dropdown-menu button:hover { background: var(--surface-3); }
+  .dropdown-menu button.is-selected { color: #fff; font-weight: 600; }
+
+  .wizard-error {
+    margin-top: 20px; border-radius: 10px; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.1);
+    padding: 10px 14px; font-size: 14px; color: #fca5a5; display: none;
+  }
+  .wizard-error.show { display: block; }
+
+  .wizard-nav { margin-top: 32px; display: flex; align-items: center; justify-content: space-between; }
+  .wizard-nav .btn { padding: 10px 22px; font-size: 14px; font-weight: 500; }
+
+  /* ---------- Modal de planos ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100; background: rgba(5,6,12,0.75);
+    display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal-card {
+    position: relative; width: 100%; max-width: 880px; border-radius: 20px; border: 1px solid var(--border-soft);
+    background: #0d0d14; padding: 24px; margin: auto;
+  }
+  @media (min-width: 640px) { .modal-card { padding: 32px; } }
+  .modal-close {
+    position: absolute; right: 20px; top: 20px; background: none; border: none; color: var(--text-faint); font-size: 18px;
+  }
+  .modal-close:hover { color: #fff; }
+  .modal-card h2 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .modal-card > p { margin-top: 6px; font-size: 14px; color: var(--text-muted); max-width: 560px; }
+  .modal-grid { margin-top: 24px; display: grid; gap: 32px; }
+  @media (min-width: 900px) { .modal-grid { grid-template-columns: 1fr 300px; } }
+
+  .cycle-row { display: flex; align-items: center; gap: 12px; font-size: 14px; margin-bottom: 20px; }
+  .cycle-row .cycle-label { color: var(--text-faint); }
+  .cycle-row .cycle-label.active { color: #fff; font-weight: 600; }
+  .save-badge { border-radius: 999px; border: 1px solid var(--border-soft); background: var(--surface-2); padding: 4px 10px; font-size: 12px; color: #d4d4d8; }
+
+  .plan-list { display: flex; flex-direction: column; gap: 12px; }
+  .plan-card {
+    position: relative; display: block; width: 100%; border-radius: 14px; border: 1px solid var(--border-soft);
+    background: var(--surface-1); padding: 16px 20px; text-align: left; transition: all 0.2s ease;
+  }
+  .plan-card:hover { background: var(--surface-3); }
+  .plan-card.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
+  .plan-card .plan-tag {
+    position: absolute; top: -11px; left: 20px; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #fff;
+    background-image: linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan));
+  }
+  .plan-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .plan-row .plan-name { font-weight: 600; }
+  .plan-row .plan-freq { font-size: 13px; color: var(--text-muted); }
+  .plan-price-line { margin-top: 6px; font-size: 14px; }
+  .plan-price-line .old { color: var(--text-faint); text-decoration: line-through; margin-right: 6px; }
+  .plan-price-line .new { color: #fff; font-weight: 500; }
+  .plan-per-video { flex-shrink: 0; text-align: right; }
+  .plan-per-video .amount { font-size: 18px; font-weight: 700; }
+  .plan-per-video .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); }
+
+  .qty-box {
+    margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 16px 20px;
+  }
+  .qty-box .qty-title { font-size: 14px; font-weight: 500; color: #e4e4e7; }
+  .qty-box .qty-desc { margin-top: 2px; font-size: 12px; color: var(--text-faint); }
+  .qty-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .qty-btn {
+    height: 32px; width: 32px; border-radius: 999px; border: 1px solid var(--border-soft); background: transparent;
+    color: #d4d4d8; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-btn:hover { background: rgba(255,255,255,0.05); }
+  .qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .qty-value { width: 18px; text-align: center; font-size: 14px; font-weight: 600; }
+
+  .total-row {
+    margin-top: 16px; display: flex; align-items: center; justify-content: space-between;
+    border-radius: 14px; background: var(--surface-3); padding: 16px 20px;
+  }
+  .total-row .label { font-size: 14px; color: var(--text-muted); }
+  .total-row .amount { font-size: 20px; font-weight: 700; }
+  .total-row .amount .per { font-size: 13px; font-weight: 400; color: var(--text-faint); margin-left: 4px; }
+
+  .subscribe-btn { margin-top: 16px; width: 100%; padding: 14px; font-size: 14px; font-weight: 600; }
+
+  .perks-title { font-size: 14px; font-weight: 600; color: #d4d4d8; }
+  .perks-list { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .perks-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: #d4d4d8; }
+  .perks-list li .check { color: #6ee7b7; flex-shrink: 0; margin-top: 1px; }
+  .testimonial-box { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .testimonial-card { border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 14px; }
+  .testimonial-card p { margin: 0; font-size: 14px; line-height: 1.5; color: #d4d4d8; }
+  .testimonial-card .author { margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--text-faint); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);
+    background: #18181b; border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px 20px;
+    font-size: 14px; color: #fff; z-index: 200; opacity: 0; pointer-events: none; transition: all 0.25s ease;
+    box-shadow: 0 20px 40px -12px rgba(0,0,0,0.6);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-inner">
+    <a class="logo-link" href="/index.html">
+      <img src="/logo-icon.webp" alt="FluxReel" class="logo-icon" />
+      <span class="logo-text">Flux<span class="text-gradient">Reel</span></span>
+    </a>
+    <div class="header-actions">
+      <div class="user-box" id="user-box">
+        <div class="name" id="user-name">—</div>
+        <div class="email" id="user-email">—</div>
+      </div>
+      <button type="button" class="btn btn-outline btn-sair" id="btn-sair">Sair</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wizard-wrap">
+    <div class="breadcrumb">
+      <a href="/index.html">Séries</a>
+      <span>›</span>
+      <span class="current">Criar nova série</span>
+    </div>
+
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-seg"></div><div class="progress-seg"></div><div class="progress-seg"></div>
+      <div class="progress-seg"></div><div class="progress-seg"></div><div class="progress-seg"></div>
+      <div class="progress-seg"></div>
+    </div>
+
+    <!-- ===================== ETAPA 1 — NICHO ===================== -->
+    <section class="wizard-step active" data-step="1">
+      <div class="step-head">
+        <div class="title-row">
+          <h1>Escolha seu nicho</h1>
+          <span class="badge">Etapa 1 de 7</span>
+        </div>
+        <p>Isso ajuda a IA a criar roteiros, imagens e legendas com o tom certo para o seu público.</p>
+      </div>
+      <div class="niche-grid" id="niche-grid">
+        <!-- preenchido via JS -->
+      </div>
+      <div class="custom-niche-input field" id="custom-niche-wrap">
+        <label for="custom-niche">Descreva seu nicho</label>
+        <input type="text" id="custom-niche" placeholder="Ex: curiosidades sobre o espaço" />
+      </div>
+    </section>
+
+    <!-- ===================== ETAPA 2 — IDIOMA E VOZ ===================== -->
+    <section class="wizard-step" data-step="2">
+      <div class="step-head">
+        <div class="title-row">
+          <h1>Idioma e voz</h1>
+          <span class="badge">Etapa 2 de 7</span>
+        </div>
+        <p>Escolha o idioma da narração e a voz de IA que vai contar suas histórias.</p>
+      </div>
+      <div class="lang-pills" id="lang-pills"></div>
+      <div class="option-list" id="voice-list"></div>
+    </section>
+
+    <!-- ===================== ETAPA 3 — MÚSICA DE FUNDO ===================== -->
+    <section class="wizard-step" data-step="3">
+      <div class="step-head">
+        <div class="title-row">
+          <h1>Música de fundo</h1>
+          <span class="badge">Etapa 3 de 7</span>
+          <span class="badge">Opcional</span>
+        </div>
+        <p>Escolha uma trilha para tocar por baixo da narração, ou pule esta etapa.</p>
+      </div>
+      <div class="option-list" id="music-list"></div>
+    </section>
+
+    <!-- ===================== ETAPA 4 — ESTILO VISUAL ===================== -->
+    <section class="wizard-step" data-step="4">
+      <div class="step-head">
+        <div class="title-row">
+          <h1>Estilo visual</h1>
+          <span class="badge">Etapa 4 de 7</span>
+        </div>
+        <p>Escolha o estilo de imagem que a IA vai usar para gerar as cenas dos seus vídeos.</p>
+      </div>
+      <div class="style-grid" id="style-grid"></div>
+    </section>
+
+    <!-- ===================== ETAPA 5 — ESTILO DE LEGENDA ===================== -->
+    <section class="wizard-step" data-step="5">
+      <div class="step-head">
+        <div class="title-row">
+          <h1>Estilo de legenda</h1>
+          <span class="badge">Etapa 5 de 7</span>
+        </div>
+        <p>Escolha como as legendas vão aparecer no vídeo, palavra por palavra.</p>
+      </div>
+      <div class="caption-grid" id="caption-grid"></div>
+    </section>
+
+    <!-- ===================== ETAPA 6 — EFEITOS ===================== -->
+    <section class="wizard-step" data-step="6">
+      <div class="step-head">
+        <div class="title-row">
+          <h1>Efeitos</h1>
+          <span class="badge">Etapa 6 de 7</span>
+          <span class="badge">Opcional</span>
+        </div>
+        <p>Adicione efeitos visuais para tornar seus vídeos mais envolventes e atraentes.</p>
+      </div>
+      <div class="effects-list">
+        <div class="effect-card">
+          <div>
+            <div class="effect-title"><span class="name">Efeito de falha</span><span class="effect-badge new">NOVO</span></div>
+            <p>Aplica glitches às imagens, com distorção cromática e tremor assustador — perfeito para terror, suspense e conteúdo assustador.</p>
+          </div>
+          <button type="button" class="switch" id="switch-glitch" aria-checked="false" role="switch"><span class="knob"></span></button>
+        </div>
+        <div class="effect-card">
+          <div>
+            <div class="effect-title"><span class="name">Gancho animado</span><span class="effect-badge premium">PREMIUM</span></div>
+            <p>Cria um vídeo em movimento de 5 segundos para a primeira cena, a fim de cativar os espectadores instantaneamente.</p>
+          </div>
+          <button type="button" class="switch" id="switch-hook" aria-checked="false" role="switch"><span class="knob"></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ETAPA 7 — DETALHES ===================== -->
+    <section class="wizard-step" data-step="7">
+      <div class="step-head">
+        <div class="title-row">
+          <h1>Detalhes da série</h1>
+          <span class="badge">Etapa 7 de 7</span>
+        </div>
+        <p>Dê um nome à série e escolha a duração dos vídeos</p>
+      </div>
+      <div class="field" style="margin-bottom: 24px;">
+        <label for="series-name">Nome da série</label>
+        <input type="text" id="series-name" placeholder="Ex: Terror nas profundezas" />
+      </div>
+      <div class="field" style="margin-bottom: 24px; position: relative;">
+        <span style="font-size:13px;font-weight:500;color:#c7c7ce;">Duração dos vídeos</span>
+        <button type="button" class="fake-select" id="duration-btn">
+          <span id="duration-label">30 a 40 segundos</span>
+          <span class="chev">⌄</span>
+        </button>
+        <div class="dropdown-menu" id="duration-menu">
+          <button type="button" data-value="15-30">15 a 30 segundos</button>
+          <button type="button" data-value="30-40" class="is-selected">30 a 40 segundos</button>
+          <button type="button" data-value="40-60">40 a 60 segundos</button>
+          <button type="button" data-value="60-90">60 a 90 segundos</button>
+        </div>
+      </div>
+      <div class="info-box">Sua série vai propor um novo tema no seu ritmo. Você lê o título, clica em <strong>Gerar vídeo</strong> e baixa o resultado — nada é produzido sem a sua aprovação.</div>
+    </section>
+
+    <div class="wizard-error" id="wizard-error"></div>
+
+    <div class="wizard-nav">
+      <button type="button" class="btn btn-outline" id="btn-back">← Voltar</button>
+      <button type="button" class="btn btn-gradient" id="btn-next">Continuar →</button>
+    </div>
+  </div>
+</main>
+
+<!-- ===================== MODAL — PAYWALL ===================== -->
+<div class="modal-overlay" id="paywall-overlay" hidden>
+  <div class="modal-card">
+    <button type="button" class="modal-close" id="modal-close" aria-label="Fechar">✕</button>
+    <h2>Desbloqueie sua série</h2>
+    <p>Escolha a frequência e quantas séries simultâneas você quer rodar — cada série adicional soma ao seu limite de vídeos (e ao valor mensal).</p>
+
+    <div class="modal-grid">
+      <div>
+        <div class="cycle-row">
+          <span class="cycle-label active" id="label-mensal">Mensal</span>
+          <button type="button" class="switch" id="switch-cycle" role="switch" aria-checked="false"><span class="knob"></span></button>
+          <span class="cycle-label" id="label-anual">Anual</span>
+          <span class="save-badge">Economize 25%</span>
+        </div>
+
+        <div class="plan-list" id="plan-list"></div>
+
+        <div class="qty-box">
+          <div>
+            <div class="qty-title">Quantas séries?</div>
+            <p class="qty-desc" id="qty-desc">Cada série roda no ritmo escolhido — 1 vídeo no total a cada dia.</p>
+          </div>
+          <div class="qty-controls">
+            <button type="button" class="qty-btn" id="qty-minus" aria-label="Diminuir número de séries">−</button>
+            <span class="qty-value" id="qty-value">1</span>
+            <button type="button" class="qty-btn" id="qty-plus" aria-label="Aumentar número de séries">+</button>
+          </div>
+        </div>
+
+        <div class="total-row">
+          <span class="label">Total por mês</span>
+          <span class="amount" id="total-amount">R$ 0,00<span class="per">/mês</span></span>
+        </div>
+
+        <button type="button" class="btn btn-gradient subscribe-btn" id="btn-subscribe">Assinar e criar minha série</button>
+      </div>
+
+      <div>
+        <div class="perks-title">O que você recebe</div>
+        <ul class="perks-list">
+          <li><span class="check">✓</span>Roteiro, narração, imagens e legendas gerados por IA</li>
+          <li><span class="check">✓</span>Música de fundo à sua escolha</li>
+          <li><span class="check">✓</span>6+ estilos visuais de vídeo</li>
+          <li><span class="check">✓</span>Voz de IA personalizada</li>
+          <li><span class="check">✓</span>Sem marca d'água</li>
+          <li><span class="check">✓</span>Você aprova cada vídeo antes de gastar seus créditos</li>
+        </ul>
+        <div class="testimonial-box">
+          <div class="testimonial-card">
+            <p>"Eu travava toda semana tentando editar. Agora só reviso o que a IA gera e publico — meu maior gargalo sumiu."</p>
+            <div class="author">Rafael M.</div>
+          </div>
+          <div class="testimonial-card">
+            <p>"É praticamente hands-off. Configuro a série uma vez e os vídeos aparecem prontos todo santo dia."</p>
+            <div class="author">Bianca S.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+(function () {
+  // ===================== DADOS =====================
+  var NICHES = [
+    ['terror', '👻', 'Terror'],
+    ['mitologia', '⚡', 'Mitologia'],
+    ['historias-reais', '📖', 'Histórias reais'],
+    ['curiosidades', '🧠', 'Curiosidades'],
+    ['motivacao', '🔥', 'Motivação'],
+    ['conspiracoes', '🕵️', 'Conspirações'],
+    ['ciencia', '🔬', 'Ciência'],
+    ['ficcao', '🚀', 'Ficção'],
+    ['custom', '✏️', 'Personalizado']
+  ];
+
+  var VOICES = [
+    ['Rafael', 'Masculina · tom grave e confiante'],
+    ['Heitor', 'Masculina · tom jovem e enérgico'],
+    ['Vicente', 'Masculina · tom calmo e narrativo'],
+    ['Bianca', 'Feminina · tom jovem e envolvente'],
+    ['Clara', 'Feminina · tom suave e claro']
+  ];
+
+  var TRACKS = [
+    ['creepy-melody', 'Creepy Melody'],
+    ['horror-piano', 'Horror Piano'],
+    ['unsolved-mystery', 'Unsolved Mystery'],
+    ['8bit-slowed', '8-Bit Slowed'],
+    ['quiet-before-storm', 'Quiet Before the Storm'],
+    ['brilliant-symphony', 'Brilliant Symphony']
+  ];
+
+  var STYLES = [
+    ['comic', 'Comic'], ['creepy-comic', 'Creepy Comic'], ['modern-cartoon', 'Modern Cartoon'],
+    ['disney', 'Disney'], ['mythology', 'Mythology'], ['pixel-art', 'Pixel Art'],
+    ['ghibli', 'Ghibli'], ['anime', 'Anime'], ['painting', 'Painting'],
+    ['dark-fantasy', 'Dark Fantasy'], ['lego', 'Lego'], ['realism', 'Realism'], ['fantastic', 'Fantastic']
+  ];
+  var PREVIEW_POOL_SIZE = 5;
+
+  var CAPTION_STYLES = [
+    ['classic', 'Clássico', 'style-classic'],
+    ['bold-yellow', 'Bold Amarelo', 'style-bold-yellow'],
+    ['neon', 'Neon', 'style-neon'],
+    ['blackbox', 'Caixa preta', 'style-blackbox'],
+    ['gradient-word', 'Karaokê gradiente', 'style-gradient-word']
+  ];
+  var CAPTION_SAMPLE = ['ESSA', 'HISTÓRIA', 'VAI', 'TE', 'ASSOMBRAR'];
+
+  var PLANS = [
+    { id: 'inicial', name: 'Inicial', freq: '3 vídeos por semana', oldPrice: 27.90, price: 19.90, perVideo: 1.53, tag: null },
+    { id: 'diario', name: 'Diário', freq: '1 vídeo por dia', oldPrice: 44.90, price: 29.90, perVideo: 1.00, tag: 'Mais popular' },
+    { id: 'pro', name: 'Pro', freq: '2 vídeos por dia', oldPrice: 69.90, price: 49.90, perVideo: 0.83, tag: 'Melhor para crescer' }
+  ];
+
+  // ===================== ESTADO =====================
+  var state = {
+    step: 1,
+    niche: null,
+    customNiche: '',
+    language: 'pt-BR',
+    voice: null,
+    music: null,
+    style: null,
+    captionStyle: null,
+    glitch: false,
+    hook: false,
+    seriesName: '',
+    duration: '30-40',
+    billingCycle: 'monthly',
+    plan: 'diario',
+    quantity: 1
+  };
+
+  var currentAudio = null;
+
+  function fmtBRL(n) {
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+
+  // ===================== ETAPA 1 =====================
+  var nicheGrid = document.getElementById('niche-grid');
+  nicheGrid.innerHTML = NICHES.map(function (n) {
+    return '<button type="button" class="niche-card" data-niche="' + n[0] + '">' +
+      '<span class="emoji">' + n[1] + '</span><span class="label">' + n[2] + '</span></button>';
+  }).join('');
+  nicheGrid.querySelectorAll('.niche-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      nicheGrid.querySelectorAll('.niche-card').forEach(function (c) { c.classList.remove('is-selected'); });
+      card.classList.add('is-selected');
+      state.niche = card.getAttribute('data-niche');
+      document.getElementById('custom-niche-wrap').classList.toggle('show', state.niche === 'custom');
+      hideError();
+    });
+  });
+  document.getElementById('custom-niche').addEventListener('input', function (e) {
+    state.customNiche = e.target.value;
+  });
+
+  // ===================== ETAPA 2 =====================
+  var LANGS = [['pt-BR', 'Português (Brasil)'], ['en-US', 'Inglês'], ['es-ES', 'Espanhol']];
+  var langPills = document.getElementById('lang-pills');
+  langPills.innerHTML = LANGS.map(function (l) {
+    return '<button type="button" class="lang-pill' + (l[0] === state.language ? ' is-selected' : '') + '" data-lang="' + l[0] + '">' + l[1] + '</button>';
+  }).join('');
+  langPills.querySelectorAll('.lang-pill').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      langPills.querySelectorAll('.lang-pill').forEach(function (p) { p.classList.remove('is-selected'); });
+      pill.classList.add('is-selected');
+      state.language = pill.getAttribute('data-lang');
+    });
+  });
+
+  var voiceList = document.getElementById('voice-list');
+  voiceList.innerHTML = VOICES.map(function (v) {
+    return '' +
+      '<div class="option-row" data-voice="' + v[0] + '">' +
+        '<button type="button" class="play-btn" data-audio="/voice-preview/' + v[0] + '.mp3">▶</button>' +
+        '<div class="option-row-text"><div class="name">' + v[0] + '</div><div class="desc">' + v[1] + '</div></div>' +
+        '<div class="option-row-check"></div>' +
+      '</div>';
+  }).join('');
+  attachSelection(voiceList, '.option-row', function (row) { state.voice = row.getAttribute('data-voice'); hideError(); });
+  attachAudioPreviews(voiceList);
+
+  // ===================== ETAPA 3 =====================
+  var musicList = document.getElementById('music-list');
+  var musicItems = [['none', 'Nenhuma', 'Seguir sem música de fundo', null]].concat(
+    TRACKS.map(function (t) { return [t[0], t[1], 'Música de fundo', '/music/' + t[0] + '.mp3']; })
+  );
+  musicList.innerHTML = musicItems.map(function (m) {
+    return '' +
+      '<div class="option-row" data-music="' + m[0] + '">' +
+        (m[3] ? '<button type="button" class="play-btn" data-audio="' + m[3] + '">▶</button>' : '<span class="play-btn" style="opacity:.35;cursor:default;">—</span>') +
+        '<div class="option-row-text"><div class="name">' + m[1] + '</div><div class="desc">' + m[2] + '</div></div>' +
+        '<div class="option-row-check"></div>' +
+      '</div>';
+  }).join('');
+  attachSelection(musicList, '.option-row', function (row) { state.music = row.getAttribute('data-music'); });
+  attachAudioPreviews(musicList);
+
+  // ===================== ETAPA 4 =====================
+  var styleGrid = document.getElementById('style-grid');
+  styleGrid.innerHTML = STYLES.map(function (s, i) {
+    var previewNum = (i % PREVIEW_POOL_SIZE) + 1;
+    return '' +
+      '<button type="button" class="style-pick-card" data-style="' + s[0] + '">' +
+        '<video src="/style-previews/preview_' + previewNum + '.mp4" poster="/style-previews/' + s[0] + '.webp" autoplay loop muted playsinline preload="auto"></video>' +
+        '<div class="fade"></div><span class="check">✓</span><span class="label">' + s[1] + '</span>' +
+      '</button>';
+  }).join('');
+  styleGrid.querySelectorAll('.style-pick-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      styleGrid.querySelectorAll('.style-pick-card').forEach(function (c) { c.classList.remove('is-selected'); });
+      card.classList.add('is-selected');
+      state.style = card.getAttribute('data-style');
+      hideError();
+    });
+  });
+
+  // ===================== ETAPA 5 =====================
+  var captionGrid = document.getElementById('caption-grid');
+  captionGrid.innerHTML = CAPTION_STYLES.map(function (c) {
+    var words = CAPTION_SAMPLE.map(function (w) { return '<span class="word">' + w + '</span>'; }).join(' ');
+    return '' +
+      '<button type="button" class="caption-card" data-caption="' + c[0] + '">' +
+        '<div class="cap-name">' + c[1] + '</div>' +
+        '<div class="caption-preview ' + c[2] + '">' + words + '</div>' +
+      '</button>';
+  }).join('');
+  captionGrid.querySelectorAll('.caption-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      captionGrid.querySelectorAll('.caption-card').forEach(function (c) { c.classList.remove('is-selected'); });
+      card.classList.add('is-selected');
+      state.captionStyle = card.getAttribute('data-caption');
+      hideError();
+    });
+  });
+  var captionWordIndex = 0;
+  var captionInterval = setInterval(function () {
+    if (state.step !== 5) return;
+    captionGrid.querySelectorAll('.caption-preview').forEach(function (preview) {
+      var words = preview.querySelectorAll('.word');
+      words.forEach(function (w) { w.classList.remove('active'); });
+      if (words.length) words[captionWordIndex % words.length].classList.add('active');
+    });
+    captionWordIndex++;
+  }, 450);
+
+  // ===================== ETAPA 6 =====================
+  attachSwitch('switch-glitch', function (on) { state.glitch = on; });
+  attachSwitch('switch-hook', function (on) { state.hook = on; });
+
+  // ===================== ETAPA 7 =====================
+  document.getElementById('series-name').addEventListener('input', function (e) {
+    state.seriesName = e.target.value;
+    hideError();
+  });
+  var durationBtn = document.getElementById('duration-btn');
+  var durationMenu = document.getElementById('duration-menu');
+  durationBtn.addEventListener('click', function () { durationMenu.classList.toggle('open'); });
+  durationMenu.querySelectorAll('button').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      durationMenu.querySelectorAll('button').forEach(function (o) { o.classList.remove('is-selected'); });
+      opt.classList.add('is-selected');
+      state.duration = opt.getAttribute('data-value');
+      document.getElementById('duration-label').textContent = opt.textContent;
+      durationMenu.classList.remove('open');
+    });
+  });
+  document.addEventListener('click', function (e) {
+    if (!durationBtn.contains(e.target) && !durationMenu.contains(e.target)) durationMenu.classList.remove('open');
+  });
+
+  // ===================== HELPERS =====================
+  function attachSelection(container, selector, onSelect) {
+    container.querySelectorAll(selector).forEach(function (row) {
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('.play-btn')) return;
+        container.querySelectorAll(selector).forEach(function (r) { r.classList.remove('is-selected'); });
+        row.classList.add('is-selected');
+        onSelect(row);
+      });
+    });
+  }
+
+  function attachAudioPreviews(container) {
+    container.querySelectorAll('.play-btn[data-audio]').forEach(function (btn) {
+      var audio = new Audio(btn.getAttribute('data-audio'));
+      audio.addEventListener('ended', function () { btn.textContent = '▶'; });
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (currentAudio && currentAudio !== audio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+        container.querySelectorAll('.play-btn').forEach(function (b) { if (b !== btn) b.textContent = '▶'; });
+        if (audio.paused) {
+          audio.play().then(function () {
+            btn.textContent = '⏸';
+            currentAudio = audio;
+          }).catch(function () {
+            showToast('Áudio ainda não encontrado — confira o LEIA-ME.txt para o caminho do arquivo.');
+          });
+        } else {
+          audio.pause();
+          btn.textContent = '▶';
+        }
+      });
+    });
+  }
+
+  function attachSwitch(id, onChange) {
+    var el = document.getElementById(id);
+    el.addEventListener('click', function () {
+      var on = !el.classList.contains('is-on');
+      el.classList.toggle('is-on', on);
+      el.setAttribute('aria-checked', String(on));
+      onChange(on);
+    });
+  }
+
+  function showError(msg) {
+    var box = document.getElementById('wizard-error');
+    box.textContent = msg;
+    box.classList.add('show');
+  }
+  function hideError() {
+    document.getElementById('wizard-error').classList.remove('show');
+  }
+
+  function showToast(msg) {
+    var toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { toast.classList.remove('show'); }, 3200);
+  }
+
+  // ===================== NAVEGAÇÃO =====================
+  var TOTAL_STEPS = 7;
+
+  function updateProgressBar() {
+    var segs = document.querySelectorAll('#progress-bar .progress-seg');
+    segs.forEach(function (seg, i) { seg.classList.toggle('filled', (i + 1) <= state.step); });
+  }
+
+  function showStep(n) {
+    document.querySelectorAll('.wizard-step').forEach(function (s) {
+      s.classList.toggle('active', parseInt(s.getAttribute('data-step'), 10) === n);
+    });
+    document.getElementById('btn-back').style.visibility = n === 1 ? 'hidden' : 'visible';
+    document.getElementById('btn-next').textContent = n === TOTAL_STEPS ? 'Criar série →' : 'Continuar →';
+    hideError();
+    updateProgressBar();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function validateStep(n) {
+    if (n === 1) {
+      if (!state.niche) return 'Escolha um nicho para continuar.';
+      if (state.niche === 'custom' && !state.customNiche.trim()) return 'Descreva seu nicho para continuar.';
+    }
+    if (n === 2 && !state.voice) return 'Escolha uma voz para continuar.';
+    if (n === 4 && !state.style) return 'Escolha um estilo visual para continuar.';
+    if (n === 5 && !state.captionStyle) return 'Escolha um estilo de legenda para continuar.';
+    if (n === 7 && !state.seriesName.trim()) return 'Dê um nome para a série.';
+    return null;
+  }
+
+  document.getElementById('btn-back').addEventListener('click', function () {
+    if (state.step > 1) { state.step--; showStep(state.step); }
+  });
+
+  document.getElementById('btn-next').addEventListener('click', function () {
+    var err = validateStep(state.step);
+    if (err) { showError(err); return; }
+    if (state.step === TOTAL_STEPS) {
+      openPaywall();
+      return;
+    }
+    state.step++;
+    showStep(state.step);
+  });
+
+  // ===================== MODAL DE PLANOS =====================
+  var planList = document.getElementById('plan-list');
+  function renderPlans() {
+    planList.innerHTML = PLANS.map(function (p) {
+      var isAnnual = state.billingCycle === 'annual';
+      var price = isAnnual ? p.price * 0.75 : p.price;
+      var perVideo = isAnnual ? p.perVideo * 0.75 : p.perVideo;
+      var selected = state.plan === p.id;
+      return '' +
+        '<button type="button" class="plan-card' + (selected ? ' is-selected' : '') + '" data-plan="' + p.id + '">' +
+          (p.tag ? '<span class="plan-tag">' + p.tag + '</span>' : '') +
+          '<div class="plan-row">' +
+            '<div><span class="plan-name">' + p.name + '</span> <span class="plan-freq">' + p.freq + '</span>' +
+              '<div class="plan-price-line"><span class="old">' + fmtBRL(p.oldPrice) + '</span><span class="new">' + fmtBRL(price) + (isAnnual ? '/mês (anual)' : '/mês') + '</span></div>' +
+            '</div>' +
+            '<div class="plan-per-video"><div class="amount">' + fmtBRL(perVideo) + '</div><div class="label">por vídeo</div></div>' +
+          '</div>' +
+        '</button>';
+    }).join('');
+    planList.querySelectorAll('.plan-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        state.plan = card.getAttribute('data-plan');
+        renderPlans();
+        updateTotal();
+      });
+    });
+  }
+
+  function currentPlanPrice() {
+    var plan = PLANS.filter(function (p) { return p.id === state.plan; })[0];
+    var base = state.billingCycle === 'annual' ? plan.price * 0.75 : plan.price;
+    return base;
+  }
+
+  function updateTotal() {
+    var total = currentPlanPrice() * state.quantity;
+    document.getElementById('total-amount').innerHTML = fmtBRL(total) + '<span class="per">/mês</span>';
+    document.getElementById('qty-desc').textContent = state.quantity === 1
+      ? 'Cada série roda no ritmo escolhido — 1 vídeo no total a cada dia.'
+      : state.quantity + ' séries rodando ao mesmo tempo, cada uma no ritmo escolhido.';
+  }
+
+  document.getElementById('switch-cycle').addEventListener('click', function () {
+    var isAnnual = state.billingCycle !== 'annual';
+    state.billingCycle = isAnnual ? 'annual' : 'monthly';
+    this.classList.toggle('is-on', isAnnual);
+    this.setAttribute('aria-checked', String(isAnnual));
+    document.getElementById('label-mensal').classList.toggle('active', !isAnnual);
+    document.getElementById('label-anual').classList.toggle('active', isAnnual);
+    renderPlans();
+    updateTotal();
+  });
+
+  document.getElementById('qty-minus').addEventListener('click', function () {
+    if (state.quantity > 1) { state.quantity--; refreshQty(); }
+  });
+  document.getElementById('qty-plus').addEventListener('click', function () {
+    if (state.quantity < 10) { state.quantity++; refreshQty(); }
+  });
+  function refreshQty() {
+    document.getElementById('qty-value').textContent = state.quantity;
+    document.getElementById('qty-minus').disabled = state.quantity <= 1;
+    document.getElementById('qty-plus').disabled = state.quantity >= 10;
+    updateTotal();
+  }
+
+  function openPaywall() {
+    renderPlans();
+    refreshQty();
+    updateTotal();
+    document.getElementById('paywall-overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closePaywall() {
+    document.getElementById('paywall-overlay').hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.getElementById('modal-close').addEventListener('click', closePaywall);
+  document.getElementById('paywall-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closePaywall();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !document.getElementById('paywall-overlay').hidden) closePaywall();
+  });
+  document.getElementById('btn-subscribe').addEventListener('click', function () {
+    showToast('🚧 Pagamento ainda não conectado — essa é só a parte visual por enquanto.');
+  });
+
+  // ===================== HEADER / SESSÃO =====================
+  document.getElementById('btn-sair').addEventListener('click', function () {
+    if (typeof signOut === 'function') { signOut(); } else { window.location.href = '/index.html'; }
+  });
+  if (typeof getCurrentSession === 'function') {
+    getCurrentSession().then(function (session) {
+      if (!session || !session.user) return;
+      var user = session.user;
+      var name = (user.user_metadata && user.user_metadata.full_name) || user.email;
+      document.getElementById('user-name').textContent = name;
+      document.getElementById('user-email').textContent = user.email || '';
+      document.getElementById('user-box').classList.add('has-session');
+    }).catch(function () {});
+  }
+
+  // ===================== INIT =====================
+  showStep(state.step);
+})();
+</script>
+
+</body>
+</html>
