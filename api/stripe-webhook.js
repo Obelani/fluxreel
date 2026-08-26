@@ -89,6 +89,22 @@ async function handleSubscriptionActivated(supabase, stripe, event, info) {
     return;
   }
 
+  // A Stripe reentrega automaticamente eventos que falharam antes, por horas
+  // ou dias — independente de reenvio manual. Sem essa checagem, um evento
+  // antigo reentregue fora de ordem reativa uma assinatura já superada e
+  // cancela a que está realmente ativa agora. Checar isso ANTES de qualquer
+  // outra coisa (não só na concessão de crédito) evita esse replay bagunçar
+  // o registro de qual assinatura é a atual.
+  const { data: alreadyProcessed } = await supabase
+    .from('credit_ledger')
+    .select('id')
+    .eq('stripe_event_id', event.id)
+    .maybeSingle();
+  if (alreadyProcessed) {
+    console.log('[stripe-webhook] Evento', event.id, 'já processado antes — ignorando reentrega.');
+    return;
+  }
+
   const subscription = await stripe.subscriptions.retrieve(info.subscriptionId);
 
   // Se o usuário já tinha uma assinatura ativa diferente dessa (troca de
