@@ -91,6 +91,20 @@ async function handleSubscriptionActivated(supabase, stripe, event, info) {
 
   const subscription = await stripe.subscriptions.retrieve(info.subscriptionId);
 
+  // Se o usuário já tinha uma assinatura ativa diferente dessa (troca de
+  // plano), guarda o id antigo antes do upsert sobrescrever — só cancela
+  // ela depois de confirmar que a nova está ativa e os créditos foram
+  // concedidos, pra nunca deixar o usuário sem nenhuma no meio do caminho.
+  const { data: existingSub } = await supabase
+    .from('subscriptions')
+    .select('stripe_subscription_id')
+    .eq('user_id', info.userId)
+    .maybeSingle();
+  const previousSubscriptionId =
+    existingSub && existingSub.stripe_subscription_id !== info.subscriptionId
+      ? existingSub.stripe_subscription_id
+      : null;
+
   await supabase.from('subscriptions').upsert({
     user_id: info.userId,
     stripe_customer_id: info.customerId,
@@ -114,4 +128,15 @@ async function handleSubscriptionActivated(supabase, stripe, event, info) {
     p_stripe_event_id: event.id,
   });
   if (creditError) throw creditError;
+
+  // Só cancela a assinatura anterior depois que a nova já está confirmada
+  // e os créditos concedidos — troca de plano, não perda de acesso.
+  if (previousSubscriptionId) {
+    try {
+      await stripe.subscriptions.cancel(previousSubscriptionId);
+    } catch (err) {
+      // Pode já ter sido cancelada antes (reentrega do mesmo evento) — não é fatal.
+      console.error('[stripe-webhook] Não foi possível cancelar assinatura anterior', previousSubscriptionId, err.message);
+    }
+  }
 }

@@ -578,6 +578,7 @@
         </div>
 
         <button type="button" class="btn btn-gradient subscribe-btn" id="btn-subscribe">Assinar e criar minha série</button>
+        <p class="plan-swap-note" id="plan-swap-note" style="display:none; font-size:12px; color:#a8a8b3; margin-top:8px; text-align:center;"></p>
       </div>
 
       <div>
@@ -695,7 +696,8 @@
     duration: '30-40',
     billingCycle: 'monthly',
     plan: 'diario',
-    quantity: 1
+    quantity: 1,
+    currentSubscription: null
   };
 
   var currentAudio = null;
@@ -969,9 +971,11 @@
       var price = isAnnual ? p.price * 0.75 : p.price;
       var perVideo = isAnnual ? p.perVideo * 0.75 : p.perVideo;
       var selected = state.plan === p.id;
+      var isCurrentPlan = !!(state.currentSubscription && state.currentSubscription.plan_id === p.id);
+      var tagLabel = isCurrentPlan ? 'Seu plano atual' : p.tag;
       return '' +
         '<button type="button" class="plan-card' + (selected ? ' is-selected' : '') + '" data-plan="' + p.id + '">' +
-          (p.tag ? '<span class="plan-tag">' + p.tag + '</span>' : '') +
+          (tagLabel ? '<span class="plan-tag">' + tagLabel + '</span>' : '') +
           '<div class="plan-row">' +
             '<div><span class="plan-name">' + p.name + '</span> <span class="plan-freq">' + p.freq + '</span>' +
               '<div class="plan-price-line"><span class="old">' + fmtBRL(p.oldPrice) + '</span><span class="new">' + fmtBRL(price) + (isAnnual ? '/mês (anual)' : '/mês') + '</span></div>' +
@@ -985,8 +989,38 @@
         state.plan = card.getAttribute('data-plan');
         renderPlans();
         updateTotal();
+        updateSubscribeButton();
       });
     });
+    updateSubscribeButton();
+  }
+
+  // Mostra "Assinar" normal, ou "Trocar de plano" quando o usuário já tem
+  // uma assinatura ativa e escolheu um plano/ciclo/quantidade diferente.
+  function updateSubscribeButton() {
+    var btn = document.getElementById('btn-subscribe');
+    var note = document.getElementById('plan-swap-note');
+    var sub = state.currentSubscription;
+
+    if (!sub) {
+      btn.textContent = 'Assinar e criar minha série';
+      btn.disabled = false;
+      note.style.display = 'none';
+      return;
+    }
+
+    var isSamePlan = sub.plan_id === state.plan && sub.billing_cycle === state.billingCycle && sub.quantity === state.quantity;
+    if (isSamePlan) {
+      btn.textContent = 'Esse já é o seu plano atual';
+      btn.disabled = true;
+      note.style.display = 'none';
+    } else {
+      var currentPlanName = (PLANS.filter(function (p) { return p.id === sub.plan_id; })[0] || {}).name || sub.plan_id;
+      btn.textContent = 'Trocar para este plano';
+      btn.disabled = false;
+      note.textContent = 'Isso vai substituir sua assinatura atual (' + currentPlanName + '). Créditos que sobrarem continuam valendo.';
+      note.style.display = 'block';
+    }
   }
 
   function currentPlanPrice() {
@@ -1012,6 +1046,7 @@
     document.getElementById('label-anual').classList.toggle('active', isAnnual);
     renderPlans();
     updateTotal();
+    updateSubscribeButton();
   });
 
   document.getElementById('qty-minus').addEventListener('click', function () {
@@ -1025,14 +1060,22 @@
     document.getElementById('qty-minus').disabled = state.quantity <= 1;
     document.getElementById('qty-plus').disabled = state.quantity >= 10;
     updateTotal();
+    updateSubscribeButton();
   }
 
-  function openPaywall() {
-    renderPlans();
+  async function openPaywall() {
     refreshQty();
     updateTotal();
     document.getElementById('paywall-overlay').hidden = false;
     document.body.style.overflow = 'hidden';
+    try {
+      var result = await apiGet('/api/subscription-status');
+      state.currentSubscription = result.subscription;
+    } catch (e) {
+      console.error('[FluxReel] Não foi possível checar a assinatura atual:', e);
+      state.currentSubscription = null;
+    }
+    renderPlans();
   }
   function closePaywall() {
     document.getElementById('paywall-overlay').hidden = true;
@@ -1058,6 +1101,16 @@
         'Authorization': 'Bearer ' + authSession.access_token,
       },
       body: JSON.stringify(body),
+    });
+    var data = await res.json().catch(function () { return {}; });
+    if (!res.ok) throw new Error(data.error || 'Algo deu errado. Tente novamente.');
+    return data;
+  }
+
+  async function apiGet(path) {
+    var res = await fetch(path, {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + authSession.access_token },
     });
     var data = await res.json().catch(function () { return {}; });
     if (!res.ok) throw new Error(data.error || 'Algo deu errado. Tente novamente.');
