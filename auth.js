@@ -36,14 +36,14 @@ function getSupabaseClient() {
 }
 
 // ---------- Google (login e cadastro usam a mesma chamada) ----------
-async function signInWithGoogle() {
+async function signInWithGoogle(redirectPath) {
   const client = getSupabaseClient();
   if (!client) return;
 
   const { error } = await client.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + REDIRECT_AFTER_LOGIN,
+      redirectTo: window.location.origin + (redirectPath || REDIRECT_AFTER_LOGIN),
     },
   });
 
@@ -51,6 +51,7 @@ async function signInWithGoogle() {
     console.error('[FluxReel] Erro ao entrar com Google:', error.message);
     alert('Não foi possível continuar com o Google. Tente novamente em instantes.');
   }
+}
   // Em caso de sucesso o Google redireciona a página inteira — não tem
   // mais nada pra fazer aqui, a sessão volta pronta no redirectTo acima.
 }
