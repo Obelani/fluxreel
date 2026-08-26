@@ -297,11 +297,13 @@
   tabLogin.addEventListener('click', function () { setMode('login'); });
   tabSignup.addEventListener('click', function () { setMode('signup'); });
 
-  var initialMode = new URLSearchParams(window.location.search).get('mode');
+  var urlParams = new URLSearchParams(window.location.search);
+  var initialMode = urlParams.get('mode');
+  var nextPath = urlParams.get('next');
   if (initialMode === 'signup') setMode('signup');
 
   document.getElementById('google-btn').addEventListener('click', function () {
-    signInWithGoogle();
+    signInWithGoogle(nextPath || undefined);
   });
 
   document.getElementById('auth-form').addEventListener('submit', async function (e) {
@@ -317,7 +319,7 @@
     submitBtn.textContent = isSignup ? 'Criando conta...' : 'Entrando...';
 
     var result = isSignup
-      ? await signUpWithEmail(nome, email, senha)
+      ? await signUpWithEmail(nome, email, senha, nextPath || undefined)
       : await signInWithEmail(email, senha);
 
     submitBtn.disabled = false;
@@ -331,7 +333,7 @@
     if (isSignup) {
       showSuccess('Conta criada! Confira seu e-mail para confirmar o cadastro, se a confirmação estiver ativada no projeto.');
     } else {
-      window.location.href = REDIRECT_AFTER_LOGIN;
+      window.location.href = nextPath || REDIRECT_AFTER_LOGIN;
     }
   });
 </script>
