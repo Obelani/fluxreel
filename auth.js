@@ -57,7 +57,7 @@ async function signInWithGoogle(redirectPath) {
 }
 
 // ---------- E-mail e senha ----------
-async function signUpWithEmail(nome, email, senha) {
+async function signUpWithEmail(nome, email, senha, redirectPath) {
   const client = getSupabaseClient();
   if (!client) return { error: { message: 'Configuração do Supabase ausente.' } };
 
@@ -66,7 +66,7 @@ async function signUpWithEmail(nome, email, senha) {
     password: senha,
     options: {
       data: { full_name: nome },
-      emailRedirectTo: window.location.origin + REDIRECT_AFTER_LOGIN,
+      emailRedirectTo: window.location.origin + (redirectPath || REDIRECT_AFTER_LOGIN),
     },
   });
 
@@ -98,4 +98,15 @@ async function signOut() {
   if (!client) return;
   await client.auth.signOut();
   window.location.href = '/index.html';
+}
+
+// ---------- Proteção de páginas (só pra quem estiver logado) ----------
+async function requireAuth() {
+  const session = await getCurrentSession();
+  if (!session) {
+    var next = window.location.pathname + window.location.search;
+    window.location.href = '/login.html?next=' + encodeURIComponent(next);
+    return null;
+  }
+  return session;
 }
