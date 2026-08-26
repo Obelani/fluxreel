@@ -6,11 +6,21 @@ const { getSupabaseAdmin } = require('./supabaseAdmin');
 async function getAuthenticatedUser(req) {
   const header = req.headers['authorization'] || req.headers['Authorization'];
   const token = header && header.indexOf('Bearer ') === 0 ? header.slice(7) : null;
-  if (!token) return null;
+  if (!token) {
+    console.error('[auth] Sem header Authorization: Bearer <token> na requisição');
+    return null;
+  }
 
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data || !data.user) return null;
+  if (error) {
+    console.error('[auth] supabase.auth.getUser falhou:', error.message || error);
+    return null;
+  }
+  if (!data || !data.user) {
+    console.error('[auth] supabase.auth.getUser não retornou usuário');
+    return null;
+  }
   return data.user;
 }
 
