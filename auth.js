@@ -27,7 +27,7 @@ function getSupabaseClient() {
     console.error('[FluxReel] supabase-js não carregou. Confira se o <script src=".../supabase-js@2"> está antes de auth.js.');
     return null;
   }
-  if (SUPABASE_URL.indexOf('COLE_AQUI') === 0 || SUPABASE_ANON_KEY.indexOf('COLE_AQUI') === 0) {
+  if (SUPABASE_URL.indexOf('https://kbcagxxwhenqubbktsiv.supabase.co') === 0 || SUPABASE_ANON_KEY.indexOf('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiY2FneHh3aGVucXViYmt0c2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2OTE0NjUsImV4cCI6MjEwMzI2NzQ2NX0.OoTixD0NZshdE5oY7bY_0rP9ac3nYkMf9-EfYvZU7mE') === 0) {
     console.warn('[FluxReel] Preencha SUPABASE_URL e SUPABASE_ANON_KEY em auth.js antes de usar o login.');
   }
 
