@@ -1046,8 +1046,67 @@
     if (e.key === 'Escape' && !document.getElementById('paywall-overlay').hidden) closePaywall();
   });
   document.getElementById('btn-subscribe').addEventListener('click', function () {
-    showToast('🚧 Pagamento ainda não conectado — essa é só a parte visual por enquanto.');
+    startCheckout(this);
   });
+
+  // ===================== PAGAMENTO (Stripe) =====================
+  async function apiPost(path, body) {
+    var res = await fetch(path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + authSession.access_token,
+      },
+      body: JSON.stringify(body),
+    });
+    var data = await res.json().catch(function () { return {}; });
+    if (!res.ok) throw new Error(data.error || 'Algo deu errado. Tente novamente.');
+    return data;
+  }
+
+  async function startCheckout(button) {
+    button.disabled = true;
+    var originalLabel = button.textContent;
+    button.textContent = 'Preparando pagamento…';
+    try {
+      var series = await apiPost('/api/create-series', {
+        name: state.seriesName,
+        niche: state.niche,
+        language: state.language,
+        voice: state.voice,
+        music: state.music,
+        style: state.style,
+        captionStyle: state.captionStyle,
+        glitch: state.glitch,
+        hook: state.hook,
+        duration: state.duration,
+      });
+      var checkout = await apiPost('/api/create-checkout-session', {
+        plan_id: state.plan,
+        billing_cycle: state.billingCycle,
+        quantity: state.quantity,
+        series_id: series.series_id,
+      });
+      window.location.href = checkout.url;
+    } catch (e) {
+      console.error('[FluxReel] Erro ao iniciar pagamento:', e);
+      showToast(e.message || 'Não foi possível iniciar o pagamento.');
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+
+  // Volta do Stripe Checkout: ?success=1 (pagamento confirmado) ou ?canceled=1.
+  // A geração do vídeo em si (chamar /api/generate-video e acompanhar o
+  // status) entra na próxima parte do backend.
+  (function handleCheckoutReturn() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('success') === '1') {
+      showToast('✅ Pagamento confirmado! Seus créditos já foram liberados.');
+    } else if (params.get('canceled') === '1') {
+      showToast('Pagamento cancelado — nada foi cobrado.');
+    }
+  })();
 
   // ===================== HEADER / SESSÃO =====================
   document.getElementById('btn-sair').addEventListener('click', function () {
