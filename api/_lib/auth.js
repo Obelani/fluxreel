@@ -14,7 +14,11 @@ async function getAuthenticatedUser(req) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.auth.getUser(token);
   if (error) {
+    // SUPABASE_URL não é segredo (já é público em auth.js) — logar ajuda a
+    // achar typo/espaço sobrando na variável configurada na Vercel.
     console.error('[auth] supabase.auth.getUser falhou:', error.message || error);
+    console.error('[auth] SUPABASE_URL configurada:', JSON.stringify(process.env.SUPABASE_URL));
+    if (error.cause) console.error('[auth] causa detalhada:', error.cause);
     return null;
   }
   if (!data || !data.user) {
