@@ -16,7 +16,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Para onde o usuário vai depois de logar com sucesso (Google ou e-mail/senha).
 // Troque para a página do seu painel/app quando ela existir.
-const REDIRECT_AFTER_LOGIN = '/index.html';
+const REDIRECT_AFTER_LOGIN = '/create-series.html';
 
 let _supabase = null;
 
