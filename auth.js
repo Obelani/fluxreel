@@ -15,7 +15,6 @@ const SUPABASE_URL = 'https://kbcagxxwhenqubbktsiv.supabase.co'; // ex.: https:/
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiY2FneHh3aGVucXViYmt0c2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2OTE0NjUsImV4cCI6MjEwMzI2NzQ2NX0.OoTixD0NZshdE5oY7bY_0rP9ac3nYkMf9-EfYvZU7mE'; // ex.: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 // Para onde o usuário vai depois de logar com sucesso (Google ou e-mail/senha).
-// Troque para a página do seu painel/app quando ela existir.
 const REDIRECT_AFTER_LOGIN = '/create-series.html';
 
 let _supabase = null;
@@ -27,7 +26,7 @@ function getSupabaseClient() {
     console.error('[FluxReel] supabase-js não carregou. Confira se o <script src=".../supabase-js@2"> está antes de auth.js.');
     return null;
   }
-  if (SUPABASE_URL.indexOf('https://kbcagxxwhenqubbktsiv.supabase.co') === 0 || SUPABASE_ANON_KEY.indexOf('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiY2FneHh3aGVucXViYmt0c2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2OTE0NjUsImV4cCI6MjEwMzI2NzQ2NX0.OoTixD0NZshdE5oY7bY_0rP9ac3nYkMf9-EfYvZU7mE') === 0) {
+  if (SUPABASE_URL.indexOf('COLE_AQUI') === 0 || SUPABASE_ANON_KEY.indexOf('COLE_AQUI') === 0) {
     console.warn('[FluxReel] Preencha SUPABASE_URL e SUPABASE_ANON_KEY em auth.js antes de usar o login.');
   }
 
@@ -36,6 +35,9 @@ function getSupabaseClient() {
 }
 
 // ---------- Google (login e cadastro usam a mesma chamada) ----------
+// redirectPath (opcional): pra onde voltar depois do Google. Se não passar
+// nada, usa REDIRECT_AFTER_LOGIN. Usado pelo requireAuth() pra devolver o
+// usuário pra página que ele tentou acessar antes de precisar logar.
 async function signInWithGoogle(redirectPath) {
   const client = getSupabaseClient();
   if (!client) return;
@@ -51,7 +53,6 @@ async function signInWithGoogle(redirectPath) {
     console.error('[FluxReel] Erro ao entrar com Google:', error.message);
     alert('Não foi possível continuar com o Google. Tente novamente em instantes.');
   }
-}
   // Em caso de sucesso o Google redireciona a página inteira — não tem
   // mais nada pra fazer aqui, a sessão volta pronta no redirectTo acima.
 }
@@ -101,6 +102,9 @@ async function signOut() {
 }
 
 // ---------- Proteção de páginas (só pra quem estiver logado) ----------
+// Chame no topo de qualquer página que exige login (ex.: create-series.html).
+// Se não houver sessão, manda o usuário pro login e guarda a página de
+// destino em ?next=... pra voltar pra cá automaticamente depois de logar.
 async function requireAuth() {
   const session = await getCurrentSession();
   if (!session) {
