@@ -39,9 +39,9 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const supabase = getSupabaseAdmin();
-
   try {
+    const supabase = getSupabaseAdmin();
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       await handleSubscriptionActivated(supabase, stripe, event, {
