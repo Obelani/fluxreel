@@ -37,7 +37,7 @@
   }
   img, video { max-width: 100%; display: block; }
   a { color: inherit; text-decoration: none; }
-  button { font-family: inherit; cursor: pointer; }
+  button { font-family: inherit; cursor: pointer; color: inherit; }
   input { font-family: inherit; }
 
   .text-gradient {
@@ -113,19 +113,30 @@
   .wizard-step.active { display: block; }
 
   /* ---------- Etapa 1: nicho ---------- */
-  .niche-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  @media (min-width: 560px) { .niche-grid { grid-template-columns: repeat(3, 1fr); } }
+  .niche-grid { display: flex; flex-direction: column; gap: 10px; }
   .niche-card {
-    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    display: flex; flex-direction: row; align-items: center; gap: 14px;
     border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1);
-    padding: 16px; text-align: left; transition: border-color 0.2s ease, background 0.2s ease;
+    padding: 14px 16px; text-align: left; width: 100%; transition: border-color 0.2s ease, background 0.2s ease;
   }
   .niche-card:hover { background: var(--surface-3); }
-  .niche-card .emoji { font-size: 22px; }
-  .niche-card .label { font-size: 14px; font-weight: 500; }
+  .niche-card .emoji {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    height: 40px; width: 40px; border-radius: 10px; font-size: 19px;
+  }
+  .niche-card .emoji.tint-blue { background: rgba(79,107,255,0.18); }
+  .niche-card .emoji.tint-violet { background: rgba(106,92,255,0.18); }
+  .niche-card .emoji.tint-cyan { background: rgba(32,217,255,0.18); }
+  .niche-card .label { flex: 1; font-size: 14px; font-weight: 600; }
+  .niche-card .row-check {
+    flex-shrink: 0; height: 20px; width: 20px; border-radius: 999px; border: 1px solid var(--border-soft);
+    display: flex; align-items: center; justify-content: center;
+  }
   .niche-card.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
-  .custom-niche-input { margin-top: 16px; display: none; }
-  .custom-niche-input.show { display: block; }
+  .niche-card.is-selected .row-check {
+    border-color: transparent; background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan));
+  }
+  .niche-card.is-selected .row-check::after { content: "✓"; font-size: 12px; color: #fff; }
   .field { display: flex; flex-direction: column; gap: 8px; }
   .field label { font-size: 13px; font-weight: 500; color: #c7c7ce; }
   .field input, .field .fake-select {
@@ -169,14 +180,24 @@
   }
   .option-row.is-selected .option-row-check::after { content: "✓"; font-size: 12px; color: #fff; }
 
-  /* ---------- Etapa 4: estilo visual ---------- */
-  .style-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  @media (min-width: 560px) { .style-grid { grid-template-columns: repeat(3, 1fr); } }
-  .style-pick-card {
-    position: relative; aspect-ratio: 9 / 16; overflow: hidden; border-radius: 12px;
-    border: 2px solid var(--border-soft); background: #1a1a22; transition: border-color 0.2s ease;
+  /* ---------- Etapa 4: estilo visual (carrossel) ---------- */
+  .style-grid {
+    display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 16px; cursor: grab;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; user-select: none;
+    scrollbar-width: thin; scrollbar-color: var(--brand-blue) rgba(255,255,255,0.06);
   }
-  .style-pick-card img, .style-pick-card video { height: 100%; width: 100%; object-fit: cover; }
+  .style-grid.dragging { cursor: grabbing; scroll-snap-type: none; }
+  .style-grid::-webkit-scrollbar { height: 8px; }
+  .style-grid::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
+  .style-grid::-webkit-scrollbar-thumb {
+    background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan)); border-radius: 999px;
+  }
+  .style-pick-card {
+    position: relative; flex: 0 0 auto; width: 150px; aspect-ratio: 9 / 16; overflow: hidden; border-radius: 12px;
+    border: 2px solid var(--border-soft); background: #1a1a22; transition: border-color 0.2s ease; scroll-snap-align: start;
+  }
+  @media (min-width: 640px) { .style-pick-card { width: 190px; } }
+  .style-pick-card img { height: 100%; width: 100%; object-fit: cover; pointer-events: none; }
   .style-pick-card .fade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.75), transparent 55%); }
   .style-pick-card .label { position: absolute; left: 8px; right: 8px; bottom: 8px; font-size: 13px; font-weight: 500; color: #fff; }
   .style-pick-card.is-selected { border-color: var(--brand-cyan); box-shadow: 0 0 0 3px rgba(32,217,255,0.25); }
@@ -292,11 +313,11 @@
   .plan-row .plan-name { font-weight: 600; }
   .plan-row .plan-freq { font-size: 13px; color: var(--text-muted); }
   .plan-price-line { margin-top: 6px; font-size: 14px; }
-  .plan-price-line .old { color: var(--text-faint); text-decoration: line-through; margin-right: 6px; }
-  .plan-price-line .new { color: #fff; font-weight: 500; }
+  .plan-price-line .old { color: rgba(255,255,255,0.45); text-decoration: line-through; margin-right: 6px; }
+  .plan-price-line .new { color: #fff; font-weight: 600; }
   .plan-per-video { flex-shrink: 0; text-align: right; }
-  .plan-per-video .amount { font-size: 18px; font-weight: 700; }
-  .plan-per-video .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); }
+  .plan-per-video .amount { font-size: 18px; font-weight: 700; color: #fff; }
+  .plan-per-video .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); }
 
   .qty-box {
     margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -384,10 +405,6 @@
       </div>
       <div class="niche-grid" id="niche-grid">
         <!-- preenchido via JS -->
-      </div>
-      <div class="custom-niche-input field" id="custom-niche-wrap">
-        <label for="custom-niche">Descreva seu nicho</label>
-        <input type="text" id="custom-niche" placeholder="Ex: curiosidades sobre o espaço" />
       </div>
     </section>
 
@@ -585,9 +602,9 @@
     ['motivacao', '🔥', 'Motivação'],
     ['conspiracoes', '🕵️', 'Conspirações'],
     ['ciencia', '🔬', 'Ciência'],
-    ['ficcao', '🚀', 'Ficção'],
-    ['custom', '✏️', 'Personalizado']
+    ['ficcao', '🚀', 'Ficção']
   ];
+  var NICHE_TINTS = ['tint-blue', 'tint-violet', 'tint-cyan'];
 
   var VOICES = [
     ['Rafael', 'Masculina · tom grave e confiante'],
@@ -612,7 +629,6 @@
     ['ghibli', 'Ghibli'], ['anime', 'Anime'], ['painting', 'Painting'],
     ['dark-fantasy', 'Dark Fantasy'], ['lego', 'Lego'], ['realism', 'Realism'], ['fantastic', 'Fantastic']
   ];
-  var PREVIEW_POOL_SIZE = 5;
 
   var CAPTION_STYLES = [
     ['classic', 'Clássico', 'style-classic'],
@@ -633,7 +649,6 @@
   var state = {
     step: 1,
     niche: null,
-    customNiche: '',
     language: 'pt-BR',
     voice: null,
     music: null,
@@ -649,6 +664,7 @@
   };
 
   var currentAudio = null;
+  var styleDragMoved = false;
 
   function fmtBRL(n) {
     return 'R$ ' + n.toFixed(2).replace('.', ',');
@@ -656,21 +672,20 @@
 
   // ===================== ETAPA 1 =====================
   var nicheGrid = document.getElementById('niche-grid');
-  nicheGrid.innerHTML = NICHES.map(function (n) {
+  nicheGrid.innerHTML = NICHES.map(function (n, i) {
+    var tint = NICHE_TINTS[i % NICHE_TINTS.length];
     return '<button type="button" class="niche-card" data-niche="' + n[0] + '">' +
-      '<span class="emoji">' + n[1] + '</span><span class="label">' + n[2] + '</span></button>';
+      '<span class="emoji ' + tint + '">' + n[1] + '</span>' +
+      '<span class="label">' + n[2] + '</span>' +
+      '<span class="row-check"></span></button>';
   }).join('');
   nicheGrid.querySelectorAll('.niche-card').forEach(function (card) {
     card.addEventListener('click', function () {
       nicheGrid.querySelectorAll('.niche-card').forEach(function (c) { c.classList.remove('is-selected'); });
       card.classList.add('is-selected');
       state.niche = card.getAttribute('data-niche');
-      document.getElementById('custom-niche-wrap').classList.toggle('show', state.niche === 'custom');
       hideError();
     });
-  });
-  document.getElementById('custom-niche').addEventListener('input', function (e) {
-    state.customNiche = e.target.value;
   });
 
   // ===================== ETAPA 2 =====================
@@ -701,9 +716,7 @@
 
   // ===================== ETAPA 3 =====================
   var musicList = document.getElementById('music-list');
-  var musicItems = [['none', 'Nenhuma', 'Seguir sem música de fundo', null]].concat(
-    TRACKS.map(function (t) { return [t[0], t[1], 'Música de fundo', '/music/' + t[0] + '.mp3']; })
-  );
+  var musicItems = TRACKS.map(function (t) { return [t[0], t[1], 'Música de fundo', '/music/' + t[0] + '.mp3']; });
   musicList.innerHTML = musicItems.map(function (m) {
     return '' +
       '<div class="option-row" data-music="' + m[0] + '">' +
@@ -717,22 +730,23 @@
 
   // ===================== ETAPA 4 =====================
   var styleGrid = document.getElementById('style-grid');
-  styleGrid.innerHTML = STYLES.map(function (s, i) {
-    var previewNum = (i % PREVIEW_POOL_SIZE) + 1;
+  styleGrid.innerHTML = STYLES.map(function (s) {
     return '' +
       '<button type="button" class="style-pick-card" data-style="' + s[0] + '">' +
-        '<video src="/style-previews/preview_' + previewNum + '.mp4" poster="/style-previews/' + s[0] + '.webp" autoplay loop muted playsinline preload="auto"></video>' +
+        '<img src="/style-previews/' + s[0] + '.webp" alt="" draggable="false" loading="lazy" />' +
         '<div class="fade"></div><span class="check">✓</span><span class="label">' + s[1] + '</span>' +
       '</button>';
   }).join('');
   styleGrid.querySelectorAll('.style-pick-card').forEach(function (card) {
     card.addEventListener('click', function () {
+      if (styleDragMoved) { styleDragMoved = false; return; }
       styleGrid.querySelectorAll('.style-pick-card').forEach(function (c) { c.classList.remove('is-selected'); });
       card.classList.add('is-selected');
       state.style = card.getAttribute('data-style');
       hideError();
     });
   });
+  enableDragScroll(styleGrid);
 
   // ===================== ETAPA 5 =====================
   var captionGrid = document.getElementById('caption-grid');
@@ -823,6 +837,25 @@
     });
   }
 
+  function enableDragScroll(el) {
+    var isDown = false, startX = 0, startScroll = 0;
+    el.addEventListener('mousedown', function (e) {
+      isDown = true; styleDragMoved = false;
+      el.classList.add('dragging');
+      startX = e.pageX;
+      startScroll = el.scrollLeft;
+    });
+    window.addEventListener('mouseup', function () { isDown = false; el.classList.remove('dragging'); });
+    el.addEventListener('mouseleave', function () { isDown = false; el.classList.remove('dragging'); });
+    el.addEventListener('mousemove', function (e) {
+      if (!isDown) return;
+      e.preventDefault();
+      var delta = e.pageX - startX;
+      if (Math.abs(delta) > 5) styleDragMoved = true;
+      el.scrollLeft = startScroll - delta;
+    });
+  }
+
   function attachSwitch(id, onChange) {
     var el = document.getElementById(id);
     el.addEventListener('click', function () {
@@ -870,10 +903,7 @@
   }
 
   function validateStep(n) {
-    if (n === 1) {
-      if (!state.niche) return 'Escolha um nicho para continuar.';
-      if (state.niche === 'custom' && !state.customNiche.trim()) return 'Descreva seu nicho para continuar.';
-    }
+    if (n === 1 && !state.niche) return 'Escolha um nicho para continuar.';
     if (n === 2 && !state.voice) return 'Escolha uma voz para continuar.';
     if (n === 4 && !state.style) return 'Escolha um estilo visual para continuar.';
     if (n === 5 && !state.captionStyle) return 'Escolha um estilo de legenda para continuar.';
