@@ -20,38 +20,44 @@ function buildSceneImageElements(scenes, imageUrls, totalDuration) {
   });
 }
 
-// Agrupa as palavras (com timestamp) em blocos curtos de legenda, cada um
-// com seu próprio time/duration pra aparecer sincronizado com a narração.
-function buildCaptionElements(words, style) {
-  const CHUNK_SIZE = 4;
-  const elements = [];
-  for (let i = 0; i < words.length; i += CHUNK_SIZE) {
-    const chunk = words.slice(i, i + CHUNK_SIZE);
-    const text = chunk.map(function (w) { return w.word; }).join(' ').trim();
-    if (!text) continue;
-    const start = chunk[0].start;
-    const end = chunk[chunk.length - 1].end;
-    elements.push({
-      type: 'text',
-      track: 4,
-      time: start,
-      duration: Math.max(end - start, 0.3),
-      text: text,
-      x: '50%',
-      y: '80%',
-      width: '90%',
-      x_alignment: '50%',
-      y_alignment: '50%',
-      font_family: style.font_family,
-      font_weight: style.font_weight,
-      font_size: '6.5vmin',
-      fill_color: style.fill_color,
-      stroke_color: style.stroke_color,
-      stroke_width: style.stroke_width,
-      background_color: style.background_color,
-    });
+// Um único elemento de texto cobrindo o vídeo inteiro, usando o recurso
+// nativo de transcript da Creatomate (transcript_source + transcript_effect)
+// — ela anima palavra por palavra sozinha (destaque/karaokê), sincronizada
+// com os timestamps que já temos do Groq. Bem mais bonito e mais simples do
+// que montar dezenas de blocos de texto manualmente.
+function buildCaptionElement(words, style) {
+  const transcriptSource = words.map(function (w) {
+    return { time: w.start, duration: Math.max(w.end - w.start, 0.05), value: w.word };
+  });
+
+  const el = {
+    type: 'text',
+    track: 4,
+    y: '78%',
+    width: '85%',
+    height: '30%',
+    x_alignment: '50%',
+    y_alignment: '50%',
+    font_family: style.font_family || 'Arial',
+    font_weight: style.font_weight,
+    font_size: '7 vmin',
+    fill_color: style.fill_color,
+    transcript_effect: style.transcript_effect || 'highlight',
+    transcript_color: style.transcript_color,
+    transcript_maximum_length: 20,
+    transcript_source: transcriptSource,
+  };
+  if (style.stroke_color) {
+    el.stroke_color = style.stroke_color;
+    el.stroke_width = style.stroke_width;
   }
-  return elements;
+  if (style.background_color) {
+    el.background_color = style.background_color;
+    el.background_x_padding = style.background_x_padding;
+    el.background_y_padding = style.background_y_padding;
+    el.background_border_radius = style.background_border_radius;
+  }
+  return el;
 }
 
 // Etapa 5: monta a composição (imagens + narração + música + legenda) e
@@ -90,7 +96,7 @@ module.exports = async (req, res) => {
 
     const imageElements = buildSceneImageElements(video.script.scenes, video.image_urls, totalDuration);
     const captionStyle = CAPTION_STYLES[video.series.caption_style] || CAPTION_STYLES.classic;
-    const captionElements = buildCaptionElements(words, captionStyle);
+    const captionElement = buildCaptionElement(words, captionStyle);
 
     const elements = imageElements.concat([{ type: 'audio', track: 2, source: video.audio_url }]);
     if (video.series.music) {
@@ -102,7 +108,7 @@ module.exports = async (req, res) => {
         duration: totalDuration,
       });
     }
-    elements.push.apply(elements, captionElements);
+    elements.push(captionElement);
 
     // O video_id vai na própria URL do webhook (query string) — assim não
     // dependemos de a Creatomate ecoar nenhum campo de metadata específico

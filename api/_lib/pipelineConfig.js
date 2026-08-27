@@ -39,12 +39,35 @@ const STYLE_PROMPTS = {
 };
 
 // Estilo de legenda escolhido -> estilo do texto queimado no vídeo (Creatomate).
+// Usa o recurso nativo de transcript (transcript_effect + transcript_source)
+// da Creatomate — um único elemento de texto anima palavra por palavra
+// sozinho, em vez de a gente montar dezenas de blocos de texto manualmente.
 const CAPTION_STYLES = {
-  classic: { font_family: 'Arial', font_weight: '700', fill_color: '#FFFFFF', stroke_color: '#000000', stroke_width: '2 px' },
-  'bold-yellow': { font_family: 'Arial', font_weight: '900', fill_color: '#FFD500', stroke_color: '#000000', stroke_width: '3 px' },
-  neon: { font_family: 'Arial', font_weight: '800', fill_color: '#20D9FF', stroke_color: '#0A2A33', stroke_width: '2 px' },
-  blackbox: { font_family: 'Arial', font_weight: '700', fill_color: '#FFFFFF', background_color: 'rgba(0,0,0,0.75)' },
-  'gradient-word': { font_family: 'Arial', font_weight: '800', fill_color: '#4F6BFF', stroke_color: '#000000', stroke_width: '2 px' },
+  classic: {
+    font_family: 'Arial', font_weight: '700', fill_color: '#FFFFFF',
+    stroke_color: '#000000', stroke_width: '1.4 vmin',
+    transcript_effect: 'highlight', transcript_color: '#FFD500',
+  },
+  'bold-yellow': {
+    font_family: 'Arial', font_weight: '900', fill_color: '#FFD500',
+    stroke_color: '#000000', stroke_width: '1.8 vmin',
+    transcript_effect: 'highlight', transcript_color: '#FFFFFF',
+  },
+  neon: {
+    font_family: 'Arial', font_weight: '800', fill_color: '#20D9FF',
+    stroke_color: '#0A2A33', stroke_width: '1.4 vmin',
+    transcript_effect: 'highlight', transcript_color: '#FF3DAD',
+  },
+  blackbox: {
+    font_family: 'Arial', font_weight: '700', fill_color: '#FFFFFF',
+    background_color: 'rgba(0,0,0,0.75)', background_x_padding: '18%', background_y_padding: '12%', background_border_radius: '20%',
+    transcript_effect: 'highlight', transcript_color: '#FFD500',
+  },
+  'gradient-word': {
+    font_family: 'Arial', font_weight: '800', fill_color: '#4F6BFF',
+    stroke_color: '#000000', stroke_width: '1.4 vmin',
+    transcript_effect: 'karaoke', transcript_color: '#20D9FF',
+  },
 };
 
 module.exports = { SCENE_COUNT_BY_DURATION, VOICE_IDS, STYLE_PROMPTS, CAPTION_STYLES };
