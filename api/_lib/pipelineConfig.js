@@ -12,11 +12,6 @@ const SCENE_COUNT_BY_DURATION = {
 };
 
 // Nome da voz escolhida no wizard -> voice_id da ElevenLabs.
-// PREENCHER: em app.elevenlabs.io -> Voice Library, escolha (ou clone) uma
-// voz pra cada nome abaixo (a descrição de cada uma já está no wizard, ex.:
-// "Rafael: masculina, tom grave e confiante") e copie o voice_id aqui.
-// Os valores abaixo são placeholder e a etapa de narração vai falhar até
-// serem substituídos por IDs reais.
 const VOICE_IDS = {
   Rafael: 'orF2qy9215xjwqqxqsWW',
   Heitor: 'obFqURkm39iiEiDvnsdG',

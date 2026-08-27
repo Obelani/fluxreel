@@ -116,10 +116,12 @@ module.exports = async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        output_format: 'mp4',
-        width: 1080,
-        height: 1920,
-        elements: elements,
+        source: {
+          output_format: 'mp4',
+          width: 1080,
+          height: 1920,
+          elements: elements,
+        },
         webhook_url: webhookUrl,
       }),
     });
