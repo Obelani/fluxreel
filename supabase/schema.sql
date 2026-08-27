@@ -16,6 +16,7 @@ create table if not exists public.series (
   music text,
   style text not null,
   caption_style text not null,
+  caption_font text not null default 'montserrat',
   glitch boolean not null default false,
   hook boolean not null default false,
   duration_bucket text not null,
@@ -87,6 +88,10 @@ create policy "select own series" on public.series for select using (auth.uid() 
 -- junto (os arquivos no Storage não são limpos automaticamente).
 drop policy if exists "delete own series" on public.series;
 create policy "delete own series" on public.series for delete using (auth.uid() = user_id);
+
+-- Idem pra excluir um vídeo individual (dashboard.html, aba Vídeos).
+drop policy if exists "delete own videos" on public.videos;
+create policy "delete own videos" on public.videos for delete using (auth.uid() = user_id);
 
 drop policy if exists "select own subscriptions" on public.subscriptions;
 create policy "select own subscriptions" on public.subscriptions for select using (auth.uid() = user_id);

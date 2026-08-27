@@ -494,6 +494,8 @@
         <p>Escolha como as legendas vão aparecer no vídeo, palavra por palavra.</p>
       </div>
       <div class="caption-grid" id="caption-grid"></div>
+      <p style="font-weight:600; color:#fff; font-size:14px; margin:24px 0 0;">Fonte da legenda</p>
+      <div class="lang-pills" id="font-pills" style="margin-top:10px; margin-bottom:0;"></div>
     </section>
 
     <!-- ===================== ETAPA 6 — EFEITOS ===================== -->
@@ -742,6 +744,18 @@
   ];
   var CAPTION_SAMPLE = ['ESSA', 'HISTÓRIA', 'VAI', 'TE', 'ASSOMBRAR'];
 
+  // Mesmas 5 fontes (e mesmos IDs) de api/_lib/pipelineConfig.js
+  // (CAPTION_FONTS) — o preview aqui é só decorativo (usa a fonte do
+  // sistema mais parecida via font-family), o render de verdade queima com
+  // o .ttf de cada uma.
+  var CAPTION_FONTS = [
+    ['montserrat', 'Montserrat'],
+    ['anton', 'Anton'],
+    ['bebas', 'Bebas Neue'],
+    ['poppins', 'Poppins'],
+    ['oswald', 'Oswald'],
+  ];
+
   var PLANS = [
     { id: 'inicial', name: 'Inicial', freq: '3 vídeos por semana', oldPrice: 27.90, price: 19.90, perVideo: 1.53, tag: null },
     { id: 'diario', name: 'Diário', freq: '1 vídeo por dia', oldPrice: 44.90, price: 29.90, perVideo: 1.00, tag: 'Mais popular' },
@@ -757,6 +771,7 @@
     music: null,
     style: null,
     captionStyle: null,
+    captionFont: 'montserrat',
     glitch: false,
     hook: false,
     seriesName: '',
@@ -868,6 +883,18 @@
       card.classList.add('is-selected');
       state.captionStyle = card.getAttribute('data-caption');
       hideError();
+    });
+  });
+
+  var fontPills = document.getElementById('font-pills');
+  fontPills.innerHTML = CAPTION_FONTS.map(function (f) {
+    return '<button type="button" class="lang-pill' + (f[0] === state.captionFont ? ' is-selected' : '') + '" data-font="' + f[0] + '" style="font-family:\'' + f[1] + '\',sans-serif;">' + f[1] + '</button>';
+  }).join('');
+  fontPills.querySelectorAll('.lang-pill').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      fontPills.querySelectorAll('.lang-pill').forEach(function (p) { p.classList.remove('is-selected'); });
+      pill.classList.add('is-selected');
+      state.captionFont = pill.getAttribute('data-font');
     });
   });
   var captionWordIndex = 0;
@@ -1047,6 +1074,7 @@
         music: state.music,
         style: state.style,
         captionStyle: state.captionStyle,
+        captionFont: state.captionFont,
         glitch: state.glitch,
         hook: state.hook,
         duration: state.duration,
@@ -1240,6 +1268,7 @@
         music: state.music,
         style: state.style,
         captionStyle: state.captionStyle,
+        captionFont: state.captionFont,
         glitch: state.glitch,
         hook: state.hook,
         duration: state.duration,

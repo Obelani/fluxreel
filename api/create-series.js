@@ -39,6 +39,7 @@ module.exports = async (req, res) => {
         music: body.music || null,
         style: body.style,
         caption_style: body.captionStyle,
+        caption_font: body.captionFont || 'montserrat',
         glitch: !!body.glitch,
         hook: !!body.hook,
         duration_bucket: body.duration,

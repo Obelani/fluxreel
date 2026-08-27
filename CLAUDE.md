@@ -30,7 +30,7 @@ Não muda as convenções do front (continua sem build step, sem framework) — 
 - `api/generate-video.js` — debita 1 crédito (atômico), cria a linha em `videos`, dispara a 1ª etapa (`pipeline/script`). Devolve o crédito automaticamente se o pipeline falhar em qualquer etapa.
 - `api/_lib/qstash.js` — publica a próxima etapa e verifica a assinatura das requisições recebidas do QStash.
 - `api/_lib/pipelineStage.js` — helpers comuns a toda etapa: ler/verificar payload do QStash, marcar vídeo como falho + devolver crédito.
-- `api/_lib/pipelineConfig.js` — mapeamentos entre o que o wizard oferece e o que cada API externa espera: duração → nº de cenas, voz → `voice_id` da ElevenLabs (**precisa preencher com IDs reais**, ver `Próximos passos`), estilo visual → prompt de imagem, estilo de legenda → visual do texto queimado.
+- `api/_lib/pipelineConfig.js` — mapeamentos entre o que o wizard oferece e o que cada API externa espera: duração → nº de cenas, voz → `voice_id` da ElevenLabs, estilo visual → prompt de imagem, estilo de legenda → cores do texto queimado (`CAPTION_STYLES`) e fonte escolhida → arquivo(s) `.ttf` em `/fonts` (`CAPTION_FONTS`, 5 opções: Montserrat, Anton, Bebas Neue, Poppins, Oswald).
 - `api/pipeline/script.js` — roteiro cena a cena via Claude Sonnet 5 (tool use, JSON estruturado).
 - `api/pipeline/images.js` — uma imagem por cena via fal.ai (`fal-ai/z-image/turbo`).
 - `api/pipeline/narration.js` — narração completa via ElevenLabs, guardada no Supabase Storage (bucket `media`, público).

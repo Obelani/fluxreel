@@ -1,6 +1,6 @@
 const { getSupabaseAdmin } = require('../_lib/supabaseAdmin');
 const { readVerifiedQstashPayload, markVideoFailed } = require('../_lib/pipelineStage');
-const { CAPTION_STYLES } = require('../_lib/pipelineConfig');
+const { CAPTION_STYLES, CAPTION_FONTS } = require('../_lib/pipelineConfig');
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
@@ -92,7 +92,7 @@ function buildAssSubtitles(words, style, videoWidth, videoHeight) {
   const highlightColor = toAssColor(style.highlightTextColor);
   const bgColor = style.backgroundColor ? toAssColor(style.backgroundColor) : null;
   const fontSize = Math.round(videoHeight * 0.045);
-  const bold = style.fontWeight >= 700 ? -1 : 0;
+  const bold = style.bold ? -1 : 0;
 
   const header = '[Script Info]\n' +
     'ScriptType: v4.00+\n' +
@@ -129,62 +129,6 @@ function buildAssSubtitles(words, style, videoWidth, videoHeight) {
 const TRANSITION_DURATION = 0.5;
 const TRANSITIONS = ['fade', 'dissolve', 'slideleft', 'slideright'];
 
-// Slideshow de imagens (uma por cena) com transição entre elas via `xfade`
-// (fade/dissolve/slide alternados) em vez de corte seco. Cada imagem entra
-// como um input de vídeo estático (`-loop 1 -t duração`) e as transições
-// são encadeadas num filter_complex — mais trabalhoso que o concat demuxer
-// de antes, mas é a forma do ffmpeg de sobrepor um clipe no outro.
-async function buildVisuals(workDir, imagePaths, sceneDurations, width, height) {
-  const n = imagePaths.length;
-  const scaleFilter = 'scale=' + width + ':' + height + ':force_original_aspect_ratio=increase,crop=' + width + ':' + height + ',setsar=1,fps=30,format=yuv420p';
-  const visualsPath = path.join(workDir, 'visuals.mp4');
-
-  if (n === 1) {
-    await runFfmpeg([
-      '-y', '-loop', '1', '-t', sceneDurations[0].toFixed(3), '-i', imagePaths[0],
-      '-vf', scaleFilter,
-      '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
-      visualsPath,
-    ]);
-    return visualsPath;
-  }
-
-  const T = TRANSITION_DURATION;
-  // Cada xfade sobrepõe T segundos de um clipe no outro, então o total
-  // encolhe (n-1)*T se não compensarmos — infla a duração de cada cena
-  // (exceto a última) em T pra o resultado final bater com a narração.
-  const durations = sceneDurations.map(function (d, i) { return i < n - 1 ? d + T : d; });
-
-  const args = ['-y'];
-  imagePaths.forEach(function (p, i) {
-    args.push('-loop', '1', '-t', durations[i].toFixed(3), '-i', p);
-  });
-
-  const filterParts = imagePaths.map(function (p, i) {
-    return '[' + i + ':v]' + scaleFilter + '[v' + i + ']';
-  });
-
-  let cum = durations[0];
-  let lastLabel = 'v0';
-  for (let i = 1; i < n; i++) {
-    const offset = cum - T;
-    const outLabel = i === n - 1 ? 'vout' : 'vx' + i;
-    const transition = TRANSITIONS[(i - 1) % TRANSITIONS.length];
-    filterParts.push('[' + lastLabel + '][v' + i + ']xfade=transition=' + transition + ':duration=' + T + ':offset=' + offset.toFixed(3) + '[' + outLabel + ']');
-    cum = cum + durations[i] - T;
-    lastLabel = outLabel;
-  }
-
-  args.push(
-    '-filter_complex', filterParts.join(';'),
-    '-map', '[vout]',
-    '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
-    visualsPath
-  );
-  await runFfmpeg(args);
-  return visualsPath;
-}
-
 // Narração sozinha, ou narração + música de fundo (música em loop, volume
 // baixo, cortada na duração da narração) misturadas num único trilho.
 async function buildAudio(workDir, narrationPath, musicPath) {
@@ -201,16 +145,54 @@ async function buildAudio(workDir, narrationPath, musicPath) {
   return outPath;
 }
 
-async function combineWithCaptions(workDir, visualsPath, audioPath, assPath, fontsDir) {
+// Slideshow de imagens (com transição `xfade` entre elas — fade/dissolve/
+// slide alternados) + legenda queimada (.ass) + áudio, tudo num único passe
+// de ffmpeg. Antes eram 2 passes (visuals.mp4 renderizado e depois
+// re-decodificado só pra queimar a legenda em cima) — juntar em um só corta
+// uma codificação inteira e acelera bastante essa etapa.
+async function buildFinalVideo(workDir, imagePaths, sceneDurations, audioPath, assPath, fontsDir, width, height) {
+  const n = imagePaths.length;
+  const scaleFilter = 'scale=' + width + ':' + height + ':force_original_aspect_ratio=increase,crop=' + width + ':' + height + ',setsar=1,fps=30,format=yuv420p';
+  const assFilter = 'ass=' + assPath + ':fontsdir=' + fontsDir;
   const outPath = path.join(workDir, 'output.mp4');
-  await runFfmpeg([
-    '-y', '-i', visualsPath, '-i', audioPath,
-    '-vf', 'ass=' + assPath + ':fontsdir=' + fontsDir,
-    '-map', '0:v', '-map', '1:a',
-    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
-    '-c:a', 'aac', '-b:a', '192k', '-shortest',
-    outPath,
-  ]);
+
+  const args = ['-y'];
+
+  if (n === 1) {
+    args.push('-loop', '1', '-t', sceneDurations[0].toFixed(3), '-i', imagePaths[0], '-i', audioPath);
+    args.push('-filter_complex', '[0:v]' + scaleFilter + ',' + assFilter + '[vout]');
+    args.push('-map', '[vout]', '-map', '1:a');
+  } else {
+    const T = TRANSITION_DURATION;
+    // Cada xfade sobrepõe T segundos de um clipe no outro, então o total
+    // encolhe (n-1)*T se não compensarmos — infla a duração de cada cena
+    // (exceto a última) em T pra o resultado final bater com a narração.
+    const durations = sceneDurations.map(function (d, i) { return i < n - 1 ? d + T : d; });
+    imagePaths.forEach(function (p, i) { args.push('-loop', '1', '-t', durations[i].toFixed(3), '-i', p); });
+    args.push('-i', audioPath);
+
+    const filterParts = imagePaths.map(function (p, i) { return '[' + i + ':v]' + scaleFilter + '[v' + i + ']'; });
+    let cum = durations[0];
+    let lastLabel = 'v0';
+    for (let i = 1; i < n; i++) {
+      const offset = cum - T;
+      const outLabel = i === n - 1 ? 'vpre' : 'vx' + i;
+      const transition = TRANSITIONS[(i - 1) % TRANSITIONS.length];
+      filterParts.push('[' + lastLabel + '][v' + i + ']xfade=transition=' + transition + ':duration=' + T + ':offset=' + offset.toFixed(3) + '[' + outLabel + ']');
+      cum = cum + durations[i] - T;
+      lastLabel = outLabel;
+    }
+    filterParts.push('[vpre]' + assFilter + '[vout]');
+
+    args.push('-filter_complex', filterParts.join(';'), '-map', '[vout]', '-map', String(n) + ':a');
+  }
+
+  args.push(
+    '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+    '-c:a', 'aac', '-b:a', '192k', '-shortest', '-threads', '0',
+    outPath
+  );
+  await runFfmpeg(args);
   return outPath;
 }
 
@@ -250,7 +232,9 @@ module.exports = async (req, res) => {
     if (!words || !words.length) throw new Error('captions_json sem palavras');
     const totalDuration = words[words.length - 1].end;
     const sceneDurations = buildSceneDurations(video.script.scenes, totalDuration);
-    const style = CAPTION_STYLES[video.series.caption_style] || CAPTION_STYLES.classic;
+    const colorStyle = CAPTION_STYLES[video.series.caption_style] || CAPTION_STYLES.classic;
+    const fontConfig = CAPTION_FONTS[video.series.caption_font] || CAPTION_FONTS.montserrat;
+    const style = Object.assign({}, colorStyle, { fontFamily: fontConfig.fontFamily, bold: fontConfig.bold });
 
     workDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'render-'));
 
@@ -269,25 +253,24 @@ module.exports = async (req, res) => {
       await downloadFile(process.env.BASE_URL + '/music/' + video.series.music + '.mp3', musicPath);
     }
 
-    // Baixa as fontes por URL em vez de ler do disco do projeto — a Vercel
-    // não inclui `fonts/` no bundle da function automaticamente (só rastreia
-    // arquivos importados via require/import), então precisamos delas como
-    // asset público, igual já era feito com a Creatomate.
+    // Baixa a(s) fonte(s) escolhida(s) por URL em vez de ler do disco do
+    // projeto — a Vercel não inclui `fonts/` no bundle da function
+    // automaticamente (só rastreia arquivos importados via require/import),
+    // então precisamos delas como asset público, igual já era feito com a
+    // Creatomate.
     const fontsDir = path.join(workDir, 'fonts');
     await fsp.mkdir(fontsDir);
-    await Promise.all([
-      downloadFile(process.env.BASE_URL + '/fonts/Montserrat-Bold.ttf', path.join(fontsDir, 'Montserrat-Bold.ttf')),
-      downloadFile(process.env.BASE_URL + '/fonts/Montserrat-Black.ttf', path.join(fontsDir, 'Montserrat-Black.ttf')),
-    ]);
+    await Promise.all(fontConfig.files.map(function (filename) {
+      return downloadFile(process.env.BASE_URL + '/fonts/' + filename, path.join(fontsDir, filename));
+    }));
 
     const WIDTH = 1080, HEIGHT = 1920;
-    const visualsPath = await buildVisuals(workDir, imagePaths, sceneDurations, WIDTH, HEIGHT);
     const audioPath = await buildAudio(workDir, narrationPath, musicPath);
 
     const assPath = path.join(workDir, 'captions.ass');
     await fsp.writeFile(assPath, buildAssSubtitles(words, style, WIDTH, HEIGHT));
 
-    const outputPath = await combineWithCaptions(workDir, visualsPath, audioPath, assPath, fontsDir);
+    const outputPath = await buildFinalVideo(workDir, imagePaths, sceneDurations, audioPath, assPath, fontsDir, WIDTH, HEIGHT);
 
     const fileBuffer = await fsp.readFile(outputPath);
     const storagePath = 'videos/' + videoId + '.mp4';

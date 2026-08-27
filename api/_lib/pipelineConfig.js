@@ -38,32 +38,28 @@ const STYLE_PROMPTS = {
   fantastic: 'fantasy art illustration, magical atmosphere, vivid colors',
 };
 
-// Estilo de legenda escolhido -> estilo do texto queimado no vídeo
-// (render-service/src/scenes/video.tsx, componente de legenda escrito à
-// mão em cima do Revideo). Espelha o CSS do preview do wizard
-// (create-series.html, classes .style-*.word.active, por volta da linha
-// 229) — fillColor é a cor da palavra "em repouso" (branco apagado),
-// highlightTextColor/backgroundColor é o destaque da palavra sendo falada
-// no momento (equivalente ao .word.active de cada estilo).
+// Estilo de legenda escolhido -> cores do texto queimado no vídeo (via
+// arquivo .ass, ver api/pipeline/render.js). Espelha o CSS do preview do
+// wizard (create-series.html, classes .style-*.word.active) — fillColor é a
+// cor da palavra "em repouso" (branco apagado), highlightTextColor/
+// backgroundColor é o destaque da palavra sendo falada no momento
+// (equivalente ao .word.active de cada estilo). A fonte é escolhida à parte
+// (ver CAPTION_FONTS) — não faz parte do estilo de cor.
 const CAPTION_STYLES = {
   classic: {
-    fontFamily: 'Montserrat', fontWeight: 700,
     fillColor: 'rgba(255,255,255,0.55)',
     highlightTextColor: '#FFFFFF',
   },
   'bold-yellow': {
-    fontFamily: 'Montserrat', fontWeight: 900,
     fillColor: 'rgba(255,255,255,0.55)',
     highlightTextColor: '#18181B',
     backgroundColor: '#FACC15',
   },
   neon: {
-    fontFamily: 'Montserrat', fontWeight: 700,
     fillColor: 'rgba(255,255,255,0.55)',
     highlightTextColor: '#20D9FF',
   },
   blackbox: {
-    fontFamily: 'Montserrat', fontWeight: 700,
     fillColor: 'rgba(255,255,255,0.55)',
     highlightTextColor: '#FFFFFF',
     backgroundColor: '#000000',
@@ -71,10 +67,22 @@ const CAPTION_STYLES = {
   'gradient-word': {
     // Gradiente de verdade fica pra uma iteração futura do componente de
     // legenda — por enquanto aproxima com a cor cyan da marca.
-    fontFamily: 'Montserrat', fontWeight: 700,
     fillColor: 'rgba(255,255,255,0.55)',
     highlightTextColor: '#20D9FF',
   },
 };
 
-module.exports = { SCENE_COUNT_BY_DURATION, VOICE_IDS, STYLE_PROMPTS, CAPTION_STYLES };
+// Fonte escolhida no wizard pra legenda (independente do estilo de cor
+// acima) -> arquivo(s) .ttf (em /fonts, baixados por URL em render.js já
+// que a Vercel não inclui a pasta no bundle da function) + o nome de família
+// exato gravado dentro do arquivo (precisa bater com o que o fontconfig/
+// libass enxerga, não é só um rótulo nosso).
+const CAPTION_FONTS = {
+  montserrat: { label: 'Montserrat', fontFamily: 'Montserrat', bold: true, files: ['Montserrat-Bold.ttf'] },
+  anton: { label: 'Anton', fontFamily: 'Anton', bold: false, files: ['Anton-Regular.ttf'] },
+  bebas: { label: 'Bebas Neue', fontFamily: 'Bebas Neue', bold: false, files: ['BebasNeue-Regular.ttf'] },
+  poppins: { label: 'Poppins', fontFamily: 'Poppins', bold: true, files: ['Poppins-Bold.ttf'] },
+  oswald: { label: 'Oswald', fontFamily: 'Oswald', bold: true, files: ['Oswald-Bold.ttf'] },
+};
+
+module.exports = { SCENE_COUNT_BY_DURATION, VOICE_IDS, STYLE_PROMPTS, CAPTION_STYLES, CAPTION_FONTS };

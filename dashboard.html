@@ -49,6 +49,8 @@
   .btn-outline { background: transparent; color: #d4d4d8; border: 1px solid var(--border-soft); padding: 0 18px; height: 40px; font-size: 14px; }
   .btn-outline:hover { background: rgba(255,255,255,0.05); }
   .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger { background: #f97066; color: #fff; padding: 0 18px; height: 40px; font-size: 14px; }
+  .btn-danger:hover { opacity: 0.9; }
   .btn-sm { height: 34px; padding: 0 16px; font-size: 13px; }
   .link-arrow { font-size: 13px; font-weight: 600; }
 
@@ -461,6 +463,18 @@
   </div>
 </div>
 
+<!-- ===================== MODAL — CONFIRMAÇÃO ===================== -->
+<div class="modal-overlay" id="confirm-overlay" hidden>
+  <div class="modal-card" style="max-width:360px; text-align:center;">
+    <h2 id="confirm-title" style="margin-bottom:10px;">Confirmar</h2>
+    <p id="confirm-message" style="color:var(--text-muted); font-size:14px; line-height:1.5; margin-bottom:24px;"></p>
+    <div style="display:flex; gap:10px;">
+      <button type="button" class="btn btn-outline" id="confirm-cancel" style="flex:1;">Cancelar</button>
+      <button type="button" class="btn btn-danger" id="confirm-ok" style="flex:1;">Excluir</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -502,6 +516,36 @@
     toast.classList.add('show');
     clearTimeout(toast._t);
     toast._t = setTimeout(function () { toast.classList.remove('show'); }, 3200);
+  }
+
+  // Modal de confirmação com o layout do app, no lugar do window.confirm()
+  // nativo do navegador. Resolve `true` (confirmou) ou `false` (cancelou).
+  function showConfirm(message, confirmLabel) {
+    return new Promise(function (resolve) {
+      var overlay = document.getElementById('confirm-overlay');
+      var okBtn = document.getElementById('confirm-ok');
+      var cancelBtn = document.getElementById('confirm-cancel');
+      document.getElementById('confirm-message').textContent = message;
+      okBtn.textContent = confirmLabel || 'Excluir';
+      overlay.hidden = false;
+      document.body.style.overflow = 'hidden';
+
+      function cleanup(result) {
+        overlay.hidden = true;
+        document.body.style.overflow = '';
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        overlay.removeEventListener('click', onOverlayClick);
+        resolve(result);
+      }
+      function onOk() { cleanup(true); }
+      function onCancel() { cleanup(false); }
+      function onOverlayClick(e) { if (e.target === overlay) cleanup(false); }
+
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+      overlay.addEventListener('click', onOverlayClick);
+    });
   }
 
   async function apiPost(path, body) {
@@ -575,6 +619,7 @@
     classic: 'Legenda Clássica', 'bold-yellow': 'Legenda Bold Amarelo', neon: 'Legenda Neon',
     blackbox: 'Legenda Caixa Preta', 'gradient-word': 'Legenda Karaokê Gradiente',
   };
+  var FONT_LABELS = { montserrat: 'Montserrat', anton: 'Anton', bebas: 'Bebas Neue', poppins: 'Poppins', oswald: 'Oswald' };
   var DURATION_LABELS = { '15-30': '15 a 30 segundos', '30-40': '30 a 40 segundos', '40-60': '40 a 60 segundos', '60-90': '60 a 90 segundos' };
 
   function fmtDate(iso) {
@@ -599,6 +644,7 @@
       LANG_LABELS[s.language] || s.language,
       DURATION_LABELS[s.duration_bucket] || s.duration_bucket,
       CAPTION_LABELS[s.caption_style] || s.caption_style,
+      FONT_LABELS[s.caption_font] || FONT_LABELS.montserrat,
     ];
     if (s.glitch) chips.push('Efeito Glitch');
     if (s.hook) chips.push('Hook automático');
@@ -645,7 +691,8 @@
   async function deleteSeries(seriesId) {
     var series = seriesFor(seriesId);
     var name = series ? series.name : 'essa série';
-    if (!window.confirm('Excluir "' + name + '"? Os vídeos gerados por ela também serão apagados. Essa ação não pode ser desfeita.')) return;
+    var ok = await showConfirm('Excluir "' + name + '"? Os vídeos gerados por ela também serão apagados. Essa ação não pode ser desfeita.');
+    if (!ok) return;
     try {
       var result = await supabase.from('series').delete().eq('id', seriesId);
       if (result.error) throw result.error;
@@ -740,7 +787,12 @@
         '<div class="video-card">' +
           '<div class="card-head">' +
             '<div class="title">' + videoTitle(v) + '</div>' +
-            statusBadge(v) +
+            '<div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">' +
+              statusBadge(v) +
+              '<button type="button" class="btn-delete" data-delete-video="' + v.id + '" title="Excluir vídeo" aria-label="Excluir vídeo">' +
+                '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 5.5h13M8 5.5V4a1.5 1.5 0 0 1 1.5-1.5h1A1.5 1.5 0 0 1 12 4v1.5M5.5 5.5v10a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-10" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+              '</button>' +
+            '</div>' +
           '</div>' +
           '<div class="meta">' + videoMeta(v) + '</div>' +
           preview +
@@ -755,6 +807,31 @@
         downloadVideo(btn.getAttribute('data-download'), btn.getAttribute('data-filename'), btn);
       });
     });
+    list.querySelectorAll('[data-delete-video]').forEach(function (btn) {
+      btn.addEventListener('click', function () { deleteVideo(btn.getAttribute('data-delete-video')); });
+    });
+  }
+
+  async function deleteVideo(videoId) {
+    var video = videoRows.filter(function (v) { return v.id === videoId; })[0];
+    var ok = await showConfirm('Excluir "' + (video ? videoTitle(video) : 'esse vídeo') + '"? Essa ação não pode ser desfeita.');
+    if (!ok) return;
+    try {
+      var result = await supabase.from('videos').delete().eq('id', videoId);
+      if (result.error) throw result.error;
+      videoRows = videoRows.filter(function (v) { return v.id !== videoId; });
+      renderVideos();
+      renderSeries();
+      showToast('Vídeo excluído.');
+      // Best-effort: apaga o arquivo do Storage também (não bloqueia se falhar).
+      if (video && video.video_url && video.video_url.indexOf('/media/') !== -1) {
+        var storagePath = video.video_url.split('/media/')[1];
+        supabase.storage.from('media').remove([storagePath]).catch(function () {});
+      }
+    } catch (e) {
+      console.error('[FluxReel] Falha ao excluir vídeo:', e);
+      showToast('Não foi possível excluir o vídeo.');
+    }
   }
 
   // Baixa o vídeo de verdade (em vez de só abrir a página do arquivo) —

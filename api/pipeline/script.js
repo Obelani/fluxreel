@@ -40,6 +40,21 @@ module.exports = async (req, res) => {
     const series = video.series;
     const sceneCount = SCENE_COUNT_BY_DURATION[series.duration_bucket] || 7;
 
+    // Outros vídeos já gerados nessa série — evita que o Claude converja
+    // sempre pros mesmos temas "óbvios" do nicho quando o prompt é quase
+    // idêntico a cada chamada (mesmo nicho, mesma instrução).
+    const { data: priorVideos } = await supabase
+      .from('videos')
+      .select('script')
+      .eq('series_id', series.id)
+      .neq('id', videoId)
+      .not('script', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    const usedTitles = (priorVideos || [])
+      .map(function (v) { return v.script && v.script.title; })
+      .filter(Boolean);
+
     const scriptTool = {
       name: 'roteiro_video',
       description: 'Roteiro de um vídeo curto para redes sociais, dividido em cenas.',
@@ -63,14 +78,21 @@ module.exports = async (req, res) => {
       },
     };
 
-    const prompt = [
+    const promptParts = [
       'Escreva o roteiro de um vídeo curto e viral para redes sociais (estilo TikTok/Reels/Shorts).',
       'Nicho: ' + series.niche + '.',
       'Idioma da narração: português do Brasil.',
       'Divida em exatamente ' + sceneCount + ' cenas.',
       'Cada cena tem uma narração curta (1 a 3 frases) que prende a atenção, e uma descrição visual em inglês para gerar a imagem daquela cena.',
       'A primeira cena precisa ser um gancho forte que prenda a atenção nos primeiros segundos.',
-    ].join(' ');
+    ];
+    if (usedTitles.length) {
+      promptParts.push(
+        'Essa série já publicou vídeos com estes títulos — escolha um tema e um ângulo diferentes de todos eles, sem repetir a mesma história/fato/curiosidade: ' +
+        usedTitles.map(function (t) { return '"' + t + '"'; }).join(', ') + '.'
+      );
+    }
+    const prompt = promptParts.join(' ');
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const response = await anthropic.messages.create({
