@@ -18,11 +18,11 @@ const SCENE_COUNT_BY_DURATION = {
 // Os valores abaixo são placeholder e a etapa de narração vai falhar até
 // serem substituídos por IDs reais.
 const VOICE_IDS = {
-  Rafael: 'SUBSTITUA_PELO_VOICE_ID_RAFAEL',
-  Heitor: 'SUBSTITUA_PELO_VOICE_ID_HEITOR',
-  Vicente: 'SUBSTITUA_PELO_VOICE_ID_VICENTE',
-  Bianca: 'SUBSTITUA_PELO_VOICE_ID_BIANCA',
-  Clara: 'SUBSTITUA_PELO_VOICE_ID_CLARA',
+  Rafael: 'orF2qy9215xjwqqxqsWW',
+  Heitor: 'obFqURkm39iiEiDvnsdG',
+  Vicente: 'bhehD3jAYQsch18622NF',
+  Bianca: '9LwXyqQB0mUwtLRsS227',
+  Clara: 'iScHbNW8K33gNo3lGgbo',
 };
 
 // Estilo visual escolhido -> sufixo de prompt (em inglês, os modelos de
