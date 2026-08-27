@@ -374,25 +374,24 @@
   .auth-gate span { font-size: 14px; color: var(--text-muted); }
   @keyframes auth-spin { to { transform: rotate(360deg); } }
 
-  /* ---------- Animação falsa de "gerando vídeo" (antes do popup de planos,
-     só pra quem já tem conta e clicou em "Nova série"/"Criar uma série" no
-     painel) ---------- */
-  .fake-gen-preview { margin: 0 auto 24px; width: 140px; aspect-ratio: 9 / 16; border-radius: 16px; border: 1px solid var(--border-soft); background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
-  .fake-gen-title { font-size: 20px; font-weight: 700; margin: 0; }
-  .fake-gen-sub { margin-top: 6px; font-size: 14px; color: var(--text-muted); }
-  .fake-gen-bar-wrap { margin-top: 24px; height: 6px; width: 100%; border-radius: 999px; background: rgba(255,255,255,0.1); overflow: hidden; }
-  .fake-gen-bar { height: 100%; border-radius: 999px; background-image: linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); width: 4%; transition: width 0.3s linear; }
-  .fake-gen-progress-row { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-faint); }
-  .fake-gen-progress-row .pct { font-weight: 600; color: #d4d4d8; }
-  .fake-gen-list { margin-top: 24px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
-  .fake-gen-item { display: flex; align-items: center; gap: 12px; border-radius: 12px; border: 1px solid var(--border-soft); padding: 12px 16px; transition: all 0.2s ease; }
-  .fake-gen-item .badge { flex-shrink: 0; width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text-faint); }
-  .fake-gen-item .label { font-size: 14px; color: var(--text-muted); }
-  .fake-gen-item.is-done .badge { border-color: var(--brand-cyan); background: rgba(32,217,255,0.15); color: var(--brand-cyan); }
-  .fake-gen-item.is-active { border-color: rgba(79,107,255,0.4); background: var(--surface-2); }
-  .fake-gen-item.is-active .badge { border-color: var(--brand-blue); color: var(--brand-cyan); }
-  .fake-gen-item.is-active .label { color: #fff; font-weight: 500; }
-  .fake-gen-item .pulse { margin-left: auto; width: 6px; height: 6px; border-radius: 999px; background: var(--brand-cyan); animation: pulse-dot 1.2s ease-in-out infinite; }
+  /* ---------- Modal de geração do vídeo (passos reais do pipeline,
+     acompanhados via Supabase Realtime) ---------- */
+  .gen-preview { margin: 0 auto 24px; width: 140px; aspect-ratio: 9 / 16; border-radius: 16px; border: 1px solid var(--border-soft); background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
+  .gen-title { font-size: 20px; font-weight: 700; margin: 0; }
+  .gen-sub { margin-top: 6px; font-size: 14px; color: var(--text-muted); }
+  .gen-bar-wrap { margin-top: 24px; height: 6px; width: 100%; border-radius: 999px; background: rgba(255,255,255,0.1); overflow: hidden; }
+  .gen-bar { height: 100%; border-radius: 999px; background-image: linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); width: 4%; transition: width 0.4s ease; }
+  .gen-progress-row { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-faint); }
+  .gen-progress-row .pct { font-weight: 600; color: #d4d4d8; }
+  .gen-list { margin-top: 24px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+  .gen-item { display: flex; align-items: center; gap: 12px; border-radius: 12px; border: 1px solid var(--border-soft); padding: 12px 16px; transition: all 0.2s ease; }
+  .gen-item .badge { flex-shrink: 0; width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text-faint); }
+  .gen-item .label { font-size: 14px; color: var(--text-muted); }
+  .gen-item.is-done .badge { border-color: var(--brand-cyan); background: rgba(32,217,255,0.15); color: var(--brand-cyan); }
+  .gen-item.is-active { border-color: rgba(79,107,255,0.4); background: var(--surface-2); }
+  .gen-item.is-active .badge { border-color: var(--brand-blue); color: var(--brand-cyan); }
+  .gen-item.is-active .label { color: #fff; font-weight: 500; }
+  .gen-item .pulse { margin-left: auto; width: 6px; height: 6px; border-radius: 999px; background: var(--brand-cyan); animation: pulse-dot 1.2s ease-in-out infinite; }
   @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 </style>
 </head>
@@ -563,20 +562,6 @@
   </div>
 </main>
 
-<!-- ===================== MODAL — ANIMAÇÃO FALSA DE GERAÇÃO ===================== -->
-<div class="modal-overlay" id="fake-generation-overlay" hidden>
-  <div class="modal-card" style="text-align:center; max-width:420px;">
-    <div class="fake-gen-preview">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8.5v7l6-3.5-6-3.5Z" fill="currentColor" stroke="none"/></svg>
-    </div>
-    <h2 class="fake-gen-title" id="fake-gen-title">Sua série</h2>
-    <p class="fake-gen-sub">A IA está produzindo seu vídeo agora.</p>
-    <div class="fake-gen-bar-wrap"><div class="fake-gen-bar" id="fake-gen-bar"></div></div>
-    <div class="fake-gen-progress-row"><span>Só mais alguns instantes...</span><span class="pct" id="fake-gen-pct">4%</span></div>
-    <div class="fake-gen-list" id="fake-gen-list"></div>
-  </div>
-</div>
-
 <!-- ===================== MODAL — PAYWALL ===================== -->
 <div class="modal-overlay" id="paywall-overlay" hidden>
   <div class="modal-card">
@@ -641,16 +626,21 @@
   </div>
 </div>
 
-<!-- ===================== MODAL — GERAÇÃO DO VÍDEO ===================== -->
+<!-- ===================== MODAL — GERAÇÃO DO VÍDEO =====================
+     Acompanha os passos reais do pipeline (script → imagens → narração →
+     legendas → render) via Supabase Realtime, do início ao vídeo pronto. -->
 <div class="modal-overlay" id="generation-overlay" hidden>
-  <div class="modal-card" style="text-align:center;">
+  <div class="modal-card" style="text-align:center; max-width:420px;">
     <div id="generation-progress">
-      <h2 style="margin-bottom:8px;">Gerando seu vídeo…</h2>
-      <p id="generation-status-label" style="color:#a8a8b3; margin-bottom:24px;">Preparando…</p>
-      <div style="width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden;">
-        <div id="generation-progress-bar" style="height:100%; width:8%; background:linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); transition: width 0.4s ease;"></div>
+      <div class="gen-preview">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8.5v7l6-3.5-6-3.5Z" fill="currentColor" stroke="none"/></svg>
       </div>
-      <p style="font-size:12px; color:#7d7d88; margin-top:16px;">Isso pode levar alguns minutos — pode fechar essa tela e voltar depois, o vídeo continua sendo gerado.</p>
+      <h2 class="gen-title" id="gen-title">Sua série</h2>
+      <p class="gen-sub">A IA está produzindo seu vídeo agora.</p>
+      <div class="gen-bar-wrap"><div class="gen-bar" id="generation-progress-bar"></div></div>
+      <div class="gen-progress-row"><span id="generation-status-label">Preparando…</span><span class="pct" id="gen-pct">8%</span></div>
+      <div class="gen-list" id="gen-list"></div>
+      <p style="font-size:12px; color:#7d7d88; margin-top:20px;">Isso pode levar alguns minutos — pode fechar essa tela e voltar depois, o vídeo continua sendo gerado.</p>
     </div>
     <div id="generation-ready" hidden>
       <h2 style="margin-bottom:16px;">Seu vídeo está pronto! 🎉</h2>
@@ -1076,67 +1066,12 @@
       btn.disabled = true;
       var direct = await canGenerateDirectly();
       btn.disabled = false;
-      var onDone = direct ? createSeriesAndGenerate : openPaywall;
-      // A animação falsa de "gerando vídeo" só aparece pra quem já tem conta
-      // e veio dos botões "Nova série"/"Criar uma série" do painel (?new=1)
-      // — quem está se cadastrando pela primeira vez vai direto pro popup.
-      if (landingParams.get('new') === '1') {
-        playFakeGeneration(onDone);
-      } else {
-        onDone();
-      }
+      if (direct) { createSeriesAndGenerate(); } else { openPaywall(); }
       return;
     }
     state.step++;
     showStep(state.step);
   });
-
-  // ===================== ANIMAÇÃO FALSA DE GERAÇÃO =====================
-  var FAKE_GEN_STEPS = ['Escrevendo o roteiro', 'Gerando as imagens', 'Gravando a narração', 'Sincronizando as legendas', 'Montando o vídeo final'];
-
-  function renderFakeGenList(activeIndex) {
-    document.getElementById('fake-gen-list').innerHTML = FAKE_GEN_STEPS.map(function (label, i) {
-      var cls = i < activeIndex ? 'is-done' : (i === activeIndex ? 'is-active' : '');
-      var badge = i < activeIndex ? '✓' : String(i + 1);
-      var pulse = i === activeIndex ? '<span class="pulse"></span>' : '';
-      return '<div class="fake-gen-item ' + cls + '"><span class="badge">' + badge + '</span><span class="label">' + label + '</span>' + pulse + '</div>';
-    }).join('');
-  }
-
-  function playFakeGeneration(onDone) {
-    document.getElementById('fake-gen-title').textContent = state.seriesName || 'Sua série';
-    document.getElementById('fake-generation-overlay').hidden = false;
-    document.body.style.overflow = 'hidden';
-
-    var progress = 4;
-    var stepIndex = 0;
-    var STEP_DURATION = 900;
-    var LAST_STEP_EXTRA = 1800;
-
-    renderFakeGenList(stepIndex);
-    document.getElementById('fake-gen-bar').style.width = progress + '%';
-    document.getElementById('fake-gen-pct').textContent = progress + '%';
-
-    var barTimer = setInterval(function () {
-      progress = Math.min(progress + Math.random() * 4 + 1, 98);
-      document.getElementById('fake-gen-bar').style.width = progress + '%';
-      document.getElementById('fake-gen-pct').textContent = Math.round(progress) + '%';
-    }, 200);
-
-    function advanceStep() {
-      stepIndex++;
-      if (stepIndex >= FAKE_GEN_STEPS.length) {
-        clearInterval(barTimer);
-        document.getElementById('fake-generation-overlay').hidden = true;
-        document.body.style.overflow = '';
-        onDone();
-        return;
-      }
-      renderFakeGenList(stepIndex);
-      setTimeout(advanceStep, stepIndex === FAKE_GEN_STEPS.length - 1 ? LAST_STEP_EXTRA : STEP_DURATION);
-    }
-    setTimeout(advanceStep, STEP_DURATION);
-  }
 
   // ===================== MODAL DE PLANOS =====================
   var planList = document.getElementById('plan-list');
@@ -1325,6 +1260,10 @@
   }
 
   // ===================== GERAÇÃO DO VÍDEO =====================
+  // Ordem real das etapas do pipeline (ver api/pipeline/*.js) — cada uma
+  // marca `status` com o nome da PRÓXIMA etapa quando termina, então esse
+  // índice representa a etapa atualmente em andamento.
+  var STATUS_ORDER = ['queued', 'script', 'images', 'narration', 'captions', 'rendering', 'ready'];
   var STATUS_LABELS = {
     queued: ['Preparando…', 8],
     script: ['Escrevendo o roteiro…', 20],
@@ -1334,6 +1273,13 @@
     rendering: ['Montando o vídeo final…', 90],
     ready: ['Pronto!', 100],
   };
+  var GEN_STEPS = [
+    { status: 'script', label: 'Escrevendo o roteiro' },
+    { status: 'images', label: 'Gerando as imagens' },
+    { status: 'narration', label: 'Gravando a narração' },
+    { status: 'captions', label: 'Sincronizando as legendas' },
+    { status: 'rendering', label: 'Montando o vídeo final' },
+  ];
 
   function showGenerationProgress(status) {
     document.getElementById('generation-overlay').hidden = false;
@@ -1341,9 +1287,20 @@
     document.getElementById('generation-progress').hidden = false;
     document.getElementById('generation-ready').hidden = true;
     document.getElementById('generation-failed').hidden = true;
+
     var info = STATUS_LABELS[status] || STATUS_LABELS.queued;
     document.getElementById('generation-status-label').textContent = info[0];
     document.getElementById('generation-progress-bar').style.width = info[1] + '%';
+    document.getElementById('gen-pct').textContent = info[1] + '%';
+
+    var currentIndex = STATUS_ORDER.indexOf(status);
+    document.getElementById('gen-list').innerHTML = GEN_STEPS.map(function (step, i) {
+      var stepIndex = STATUS_ORDER.indexOf(step.status);
+      var cls = currentIndex > stepIndex ? 'is-done' : (currentIndex === stepIndex ? 'is-active' : '');
+      var badge = currentIndex > stepIndex ? '✓' : String(i + 1);
+      var pulse = currentIndex === stepIndex ? '<span class="pulse"></span>' : '';
+      return '<div class="gen-item ' + cls + '"><span class="badge">' + badge + '</span><span class="label">' + step.label + '</span>' + pulse + '</div>';
+    }).join('');
   }
 
   function showGenerationReady(videoUrl) {
@@ -1395,6 +1352,7 @@
   }
 
   async function startVideoGeneration(seriesId) {
+    document.getElementById('gen-title').textContent = state.seriesName || 'Sua série';
     showGenerationProgress('queued');
     try {
       var result = await apiPost('/api/generate-video', { series_id: seriesId });

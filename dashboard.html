@@ -84,6 +84,7 @@
   .sub-widget { border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 14px; }
   .sub-widget .title { font-size: 13px; font-weight: 600; }
   .sub-widget .sub { margin-top: 3px; font-size: 12px; color: var(--text-faint); line-height: 1.4; }
+  .sub-widget .credits { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--brand-cyan); }
   .sub-widget .cta { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 700; }
   .sidebar-user { padding: 0 4px; }
   .sidebar-user .name { font-size: 13px; font-weight: 500; }
@@ -696,6 +697,14 @@
       console.error('[FluxReel] Não foi possível carregar a assinatura:', e);
     }
 
+    var credits = null;
+    try {
+      var creditResult = await supabase.from('credit_balances').select('credits').maybeSingle();
+      if (creditResult.data) credits = creditResult.data.credits;
+    } catch (e) {
+      console.error('[FluxReel] Não foi possível carregar os créditos:', e);
+    }
+
     var widget = document.getElementById('sidebar-sub-widget');
     var configStatus = document.getElementById('config-sub-status');
     var manageBtn = document.getElementById('btn-manage-subscription');
@@ -703,8 +712,9 @@
     if (sub) {
       var planLabel = PLAN_NAMES[sub.plan_id] || sub.plan_id;
       var cycleLabel = sub.billing_cycle === 'annual' ? 'Anual' : 'Mensal';
-      widget.innerHTML = '<div class="title">Plano ' + planLabel + '</div><div class="sub">' + cycleLabel + ' · ' + sub.quantity + ' série(s)</div>';
-      configStatus.textContent = 'Plano ' + planLabel + ' (' + cycleLabel.toLowerCase() + '), ' + sub.quantity + ' série(s).';
+      var creditsLine = credits !== null ? '<div class="credits">' + credits + ' crédito(s) disponível(is)</div>' : '';
+      widget.innerHTML = '<div class="title">Plano ' + planLabel + '</div><div class="sub">' + cycleLabel + ' · ' + sub.quantity + ' série(s)</div>' + creditsLine;
+      configStatus.textContent = 'Plano ' + planLabel + ' (' + cycleLabel.toLowerCase() + '), ' + sub.quantity + ' série(s).' + (credits !== null ? ' ' + credits + ' crédito(s) disponível(is).' : '');
       manageBtn.textContent = 'Gerenciar assinatura';
     } else {
       widget.innerHTML = '<div class="title">Sem assinatura ativa</div><div class="sub">Assine um plano pra começar a gerar vídeos.</div>' +
@@ -713,15 +723,6 @@
       manageBtn.innerHTML = '⚡ Upgrade';
       var sidebarUpgradeBtn = document.getElementById('btn-upgrade-sidebar');
       if (sidebarUpgradeBtn) sidebarUpgradeBtn.addEventListener('click', openPaywall);
-    }
-
-    try {
-      var creditResult = await supabase.from('credit_balances').select('credits').maybeSingle();
-      if (sub && creditResult.data) {
-        configStatus.textContent += ' ' + creditResult.data.credits + ' crédito(s) disponível(is).';
-      }
-    } catch (e) {
-      console.error('[FluxReel] Não foi possível carregar os créditos:', e);
     }
   }
 
