@@ -85,6 +85,8 @@ module.exports = async (req, res) => {
       'Divida em exatamente ' + sceneCount + ' cenas.',
       'Cada cena tem uma narração curta (1 a 3 frases) que prende a atenção, e uma descrição visual em inglês para gerar a imagem daquela cena.',
       'A primeira cena precisa ser um gancho forte que prenda a atenção nos primeiros segundos.',
+      'As ' + sceneCount + ' cenas juntas formam uma história COMPLETA, com começo, meio e fim — planeje o arco inteiro antes de escrever, distribuindo o desenvolvimento e a conclusão dentro desse número exato de cenas.',
+      'A última cena precisa fechar a história com uma conclusão clara (revelação, resolução, virada ou reflexão final) — nunca termine de forma abrupta, incompleta ou como se faltasse continuação.',
     ];
     if (usedTitles.length) {
       promptParts.push(
