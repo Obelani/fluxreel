@@ -1,0 +1,23 @@
+{
+  "name": "fluxreel-render-service",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Serviço de renderização de vídeo (Revideo), hospedado à parte no Fly.io — não faz parte do deploy da Vercel. Recebe imagens+áudio+legenda, monta o vídeo final e escreve o resultado direto no Supabase.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "serve": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@revideo/core": "^0.10.0",
+    "@revideo/2d": "^0.10.0",
+    "@revideo/renderer": "^0.10.0",
+    "@revideo/vite-plugin": "^0.10.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "express": "^4.21.0",
+    "vite": "^5.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "ws": "^8.18.0"
+  }
+}

@@ -651,8 +651,8 @@
   // Baixa o vídeo de verdade (em vez de só abrir a página do arquivo) —
   // busca os bytes e usa um link temporário com blob: (mesma origem),
   // que o navegador sempre respeita o atributo download, diferente de um
-  // link direto pra um domínio externo (Creatomate), que muitos navegadores
-  // ignoram e só abrem numa aba nova.
+  // link direto pra um domínio externo (Supabase Storage), que muitos
+  // navegadores ignoram e só abrem numa aba nova.
   async function downloadVideo(url, filename, btn) {
     var originalLabel = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Baixando…'; }

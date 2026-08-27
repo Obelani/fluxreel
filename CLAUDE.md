@@ -35,8 +35,7 @@ Não muda as convenções do front (continua sem build step, sem framework) — 
 - `api/pipeline/images.js` — uma imagem por cena via fal.ai (`fal-ai/z-image/turbo`).
 - `api/pipeline/narration.js` — narração completa via ElevenLabs, guardada no Supabase Storage (bucket `media`, público).
 - `api/pipeline/captions.js` — transcrição com timestamp por palavra via Groq Whisper (`whisper-large-v3-turbo`).
-- `api/pipeline/render.js` — monta a composição (imagens + narração + música + legenda sincronizada) e dispara o render assíncrono na Creatomate.
-- `api/pipeline/render-webhook.js` — recebe o callback da Creatomate quando o render termina, marca o vídeo como `ready` (ou `failed`). **A forma exata do payload da Creatomate não foi 100% confirmada na implementação** (documentação deles é renderizada em JS, não foi possível extrair o schema completo) — o handler loga o payload bruto inteiro pra ajuste rápido no primeiro teste real.
+- `api/pipeline/render.js` — monta os parâmetros da composição (imagens + durações por cena + narração + música + legenda) e manda pro `render-service` (Fly.io, ver seção **Render (Revideo, Fly.io)** abaixo). Diferente da Creatomate (removida), esse serviço não chama nenhum webhook de volta — ele mesmo sobe o vídeo pro Supabase e marca `ready`/`failed`, então essa function só dispara e retorna.
 
 **Banco e config:**
 - `supabase/schema.sql` — schema completo (tabelas `series`, `subscriptions`, `credit_balances`, `credit_ledger`, `videos` + RLS + funções atômicas de crédito). Aplicado manualmente no SQL Editor do Supabase; não há CLI/migrations configurado.
@@ -45,6 +44,17 @@ Não muda as convenções do front (continua sem build step, sem framework) — 
 Créditos: 1 crédito = 1 vídeo. Pacote fechado por ciclo de cobrança (não recarrega diariamente) — fórmula e valores em `api/_lib/plans.js`.
 
 Existe uma skill em `~/.claude/skills/backend-foundations/` (nível de usuário, disponível em qualquer projeto) que audita/implementa os padrões genéricos usados aqui (autenticação, higiene de segredo, checklist de domínio, confiabilidade de webhook, saldo atômico, troca de plano) — invocável via `/backend-foundations`.
+
+## Render (Revideo, Fly.io)
+
+A etapa final do pipeline (montar o MP4 a partir de imagens+narração+música+legenda) roda **fora da Vercel**, num subprojeto à parte em `render-service/`, deployado no Fly.io como processo Node de longa duração (não é Vercel Function). Motivo: Creatomate custaria no mínimo US$45/mês em produção e nunca teve o schema de legenda 100% confirmado; o Revideo (github.com/midrender/revideo) é open source/gratuito e roda com controle total sobre a legenda via código.
+
+- `render-service/src/scenes/video.tsx` — a composição em si (Revideo/TypeScript): imagens trocando por cena, áudio de narração + música, e o componente de legenda escrito à mão (palavra atual em destaque, resto apagado, cor/fundo por estilo). **Arquivo de maior incerteza** — ainda não testado com um render real; props exatas de `Layout`/`Rect` podem precisar de ajuste no primeiro deploy.
+- `render-service/src/server.ts` — servidor Express: `POST /render` (autenticado por segredo compartilhado `RENDER_SERVICE_SECRET`), chama `renderVideo()` do Revideo, sobe o MP4 pro Supabase Storage (bucket `media`) e atualiza a linha em `videos` (`status='ready'`/`video_url`, ou `'failed'`+devolve crédito em caso de erro — mesmo padrão de `api/_lib/pipelineStage.js`).
+- `render-service/Dockerfile` — Node 20 + ffmpeg + Chromium headless. **Segundo arquivo de maior incerteza** — ainda não confirmado se o Revideo usa Puppeteer ou Playwright internamente por baixo.
+- `render-service/fly.toml` — `auto_stop_machines`/`min_machines_running=0`: a máquina liga só quando chega um render e desliga sozinha depois (cobrança por segundo, é o motivo de termos escolhido Fly.io em vez de Railway/Render).
+- Variáveis do `render-service` (Supabase, `RENDER_SERVICE_SECRET`) ficam como `fly secrets set`, nunca na Vercel — a Vercel só precisa de `RENDER_SERVICE_URL` + `RENDER_SERVICE_SECRET` (ver `.env.example`) pra chamar o serviço.
+- Ainda não deployado no Fly.io nem testado ponta a ponta — precisa de conta no Fly.io (criação de conta é ação que o usuário faz, não eu) e `flyctl deploy` a partir de `render-service/`.
 
 ## Marca
 
@@ -67,7 +77,7 @@ Gradiente padrão (botões, destaques, textos em destaque): `linear-gradient(90d
 
 - Login com Google e e-mail/senha via Supabase Auth.
 - Google Cloud Console: projeto "fluxreel", OAuth Client tipo "Aplicativo da Web", origem autorizada = domínio canônico de produção (`https://www.fluxreel.com.br` — **com www**, é a variante que a Vercel serve direto; `fluxreel.com.br` sem www só redireciona 308 pra ela).
-- Supabase → Authentication → URL Configuration: Site URL = `https://www.fluxreel.com.br`, Redirect URLs cobrindo `https://www.fluxreel.com.br/**`. Qualquer webhook externo (Stripe, Creatomate) também precisa usar o domínio com www — o sem-www não é seguido por chamadas servidor-pra-servidor.
+- Supabase → Authentication → URL Configuration: Site URL = `https://www.fluxreel.com.br`, Redirect URLs cobrindo `https://www.fluxreel.com.br/**`. Qualquer webhook externo (ex.: Stripe) também precisa usar o domínio com www — o sem-www não é seguido por chamadas servidor-pra-servidor.
 - `REDIRECT_AFTER_LOGIN` em `auth.js` aponta pra `/create-series.html`.
 - `requireAuth()` (em `auth.js`) é a função que protege páginas — chame no topo de qualquer página nova que deva exigir login.
 
@@ -76,12 +86,13 @@ Gradiente padrão (botões, destaques, textos em destaque): `linear-gradient(90d
 - Landing page, login/cadastro e login com Google: funcionando em produção.
 - Wizard de 7 etapas + popup de planos: visual pronto, protegido por login.
 - Backend de pagamento (Fase 1+2): testado ponta a ponta em produção (modo teste da Stripe) — checkout, webhook, créditos e troca de plano funcionando, incluindo os bugs reais que apareceram no caminho (domínio sem www redirecionando e quebrando o webhook, reentrega atrasada de evento cancelando a assinatura ativa — ambos corrigidos).
-- Pipeline de geração do vídeo (Fase 3+4): testado ponta a ponta em produção — primeiro vídeo gerado com sucesso. Legenda ajustada pra bater com o preview do wizard (cores/CSS de `.style-*.word.active` em `create-series.html`), fonte Montserrat própria em `/fonts`.
+- Pipeline de geração do vídeo (Fase 3+4): roteiro→imagens→narração→legendas testados ponta a ponta em produção com a Creatomate (primeiro vídeo gerado com sucesso). **Migração de render em andamento**: a etapa de render está sendo trocada da Creatomate pro Revideo self-hosted no Fly.io (ver seção **Render (Revideo, Fly.io)**) — código do `render-service/` e do novo `api/pipeline/render.js` já escritos, mas ainda não deployados/testados de ponta a ponta.
 - Dashboard (`dashboard.html`): construído — Séries e Vídeos com dado real, assinatura/créditos, Guias e Fale conosco com conteúdo estático. Ainda não testado em produção pela primeira vez.
-- Ferramenta de dev `api/dev/preview-caption-styles.js` — reaproveita um vídeo já pronto e renderiza de novo mostrando os 5 estilos de legenda animando ao mesmo tempo, pra comparar sem gastar crédito nem regerar as etapas caras. Não é código de produção normal, só usada manualmente pelo console do navegador quando for mexer em legenda de novo.
 
 ## Próximos passos
 
+- **Deployar o `render-service/` no Fly.io** (conta + `flyctl` são passos do usuário) e testar um vídeo real de ponta a ponta — esperado precisar ajustar `video.tsx` e/ou o `Dockerfile` a partir do erro real do primeiro render (ambos sinalizados em comentário como maior incerteza).
+- Depois do primeiro deploy funcionando, remover `CREATOMATE_API_KEY` da Vercel e adicionar `RENDER_SERVICE_URL`/`RENDER_SERVICE_SECRET` (já documentadas em `.env.example`).
 - **Testar o dashboard pela primeira vez**: login com usuário que já tem série → confere se cai direto no dashboard (não no wizard); lista de séries/vídeos com dado real; "Gerar vídeo" numa série existente; "Gerenciar assinatura" abrindo o Stripe Customer Portal.
 - Criar série adicional pelo dashboard ainda não existe (só pelo wizard) — decisão de produto pendente sobre como isso se relaciona com a quantidade de séries da assinatura.
 - Subir os assets (imagens, vídeos, áudios) listados no `LEIA-ME.txt`.
