@@ -155,7 +155,9 @@ async function buildAudio(workDir, narrationPath, musicPath) {
   const outPath = path.join(workDir, 'audio_mixed.m4a');
   await runFfmpeg([
     '-y', '-stream_loop', '-1', '-i', musicPath, '-i', narrationPath,
-    '-filter_complex', '[0:a]volume=0.15[music];[music][1:a]amix=inputs=2:duration=second:dropout_transition=0[aout]',
+    // amix aceita duration=longest|shortest|first (não "second") — por isso
+    // a narração (segunda entrada) vai primeiro no amix, com duration=first.
+    '-filter_complex', '[0:a]volume=0.15[music];[1:a][music]amix=inputs=2:duration=first:dropout_transition=0[aout]',
     '-map', '[aout]', '-c:a', 'aac', '-b:a', '192k',
     outPath,
   ]);
