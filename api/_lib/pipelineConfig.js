@@ -53,33 +53,33 @@ const STYLE_PROMPTS = {
 // Estilo de legenda escolhido -> cores do texto queimado no vídeo (via
 // arquivo .ass, ver api/pipeline/render.js). Espelha o CSS do preview do
 // wizard (create-series.html, classes .style-*.word.active) — fillColor é a
-// cor da palavra "em repouso" (branco apagado), highlightTextColor/
+// cor da palavra "em repouso" (opacidade 100%), highlightTextColor/
 // backgroundColor é o destaque da palavra sendo falada no momento
 // (equivalente ao .word.active de cada estilo). A fonte é escolhida à parte
 // (ver CAPTION_FONTS) — não faz parte do estilo de cor.
 const CAPTION_STYLES = {
   classic: {
-    fillColor: 'rgba(255,255,255,0.55)',
+    fillColor: 'rgba(255,255,255,1)',
     highlightTextColor: '#FFFFFF',
   },
   'bold-yellow': {
-    fillColor: 'rgba(255,255,255,0.55)',
+    fillColor: 'rgba(255,255,255,1)',
     highlightTextColor: '#18181B',
     backgroundColor: '#FACC15',
   },
   neon: {
-    fillColor: 'rgba(255,255,255,0.55)',
+    fillColor: 'rgba(255,255,255,1)',
     highlightTextColor: '#20D9FF',
   },
   blackbox: {
-    fillColor: 'rgba(255,255,255,0.55)',
+    fillColor: 'rgba(255,255,255,1)',
     highlightTextColor: '#FFFFFF',
     backgroundColor: '#000000',
   },
   'gradient-word': {
     // Gradiente de verdade fica pra uma iteração futura do componente de
     // legenda — por enquanto aproxima com a cor cyan da marca.
-    fillColor: 'rgba(255,255,255,0.55)',
+    fillColor: 'rgba(255,255,255,1)',
     highlightTextColor: '#20D9FF',
   },
 };

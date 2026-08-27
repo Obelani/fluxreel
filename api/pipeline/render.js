@@ -93,6 +93,10 @@ function buildAssSubtitles(words, style, videoWidth, videoHeight) {
   const bgColor = style.backgroundColor ? toAssColor(style.backgroundColor) : null;
   const fontSize = Math.round(videoHeight * 0.045);
   const bold = style.bold ? -1 : 0;
+  // Sobe a legenda ~20% da altura do vídeo em relação à posição anterior
+  // (180px de margem inferior) — estava ficando escondida atrás dos
+  // controles do player de vídeo.
+  const marginV = Math.round(180 + videoHeight * 0.2);
 
   const header = '[Script Info]\n' +
     'ScriptType: v4.00+\n' +
@@ -102,7 +106,7 @@ function buildAssSubtitles(words, style, videoWidth, videoHeight) {
     'ScaledBorderAndShadow: yes\n\n' +
     '[V4+ Styles]\n' +
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n' +
-    'Style: Default,' + style.fontFamily + ',' + fontSize + ',' + fillColor + ',' + fillColor + ',&H00000000&,&H00000000&,' + bold + ',0,0,0,100,100,0,0,1,3,0,2,60,60,180,1\n\n' +
+    'Style: Default,' + style.fontFamily + ',' + fontSize + ',' + fillColor + ',' + fillColor + ',&H00000000&,&H00000000&,' + bold + ',0,0,0,100,100,0,0,1,3,0,2,60,60,' + marginV + ',1\n\n' +
     '[Events]\n' +
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
 
