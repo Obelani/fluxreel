@@ -389,6 +389,7 @@
       <span class="logo-text">Flux<span class="text-gradient">Reel</span></span>
     </a>
     <div class="header-actions">
+      <a href="/dashboard.html" class="btn btn-outline btn-sm" style="height:38px;padding:0 18px;font-size:14px;">Painel</a>
       <div class="user-box" id="user-box">
         <div class="name" id="user-name">—</div>
         <div class="email" id="user-email">—</div>
@@ -652,6 +653,23 @@
     return;
   }
   var authGate = document.getElementById('auth-gate');
+
+  // Quem já tem série cai direto no painel, em vez de refazer o wizard toda
+  // vez que loga — exceto voltando do checkout (?success=1) ou pedindo
+  // explicitamente uma série nova (?new=1).
+  var landingParams = new URLSearchParams(window.location.search);
+  if (landingParams.get('new') !== '1' && landingParams.get('success') !== '1') {
+    try {
+      var existingSeries = await getSupabaseClient().from('series').select('id').limit(1);
+      if (existingSeries.data && existingSeries.data.length > 0) {
+        window.location.href = '/dashboard.html';
+        return;
+      }
+    } catch (e) {
+      console.error('[FluxReel] Não foi possível checar séries existentes:', e);
+    }
+  }
+
   if (authGate) authGate.classList.add('hidden');
 
   // ===================== DADOS =====================
