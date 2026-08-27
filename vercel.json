@@ -2,5 +2,10 @@
   "rewrites": [
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/dashboard/:path*", "destination": "/dashboard.html" }
-  ]
+  ],
+  "functions": {
+    "api/pipeline/render.js": {
+      "maxDuration": 300
+    }
+  }
 }
