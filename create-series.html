@@ -1029,17 +1029,61 @@
     if (state.step > 1) { state.step--; showStep(state.step); }
   });
 
-  document.getElementById('btn-next').addEventListener('click', function () {
+  // Usuário já tem assinatura ativa + crédito sobrando: pula o popup de
+  // planos e gera o vídeo direto, descontando o crédito (feito de forma
+  // atômica em /api/generate-video). Só cai no popup quem não tem plano
+  // ativo ou já usou todos os créditos do ciclo.
+  async function canGenerateDirectly() {
+    try {
+      var subResult = await apiGet('/api/subscription-status');
+      if (!subResult.subscription) return false;
+      var client = getSupabaseClient();
+      var creditResult = await client.from('credit_balances').select('credits').maybeSingle();
+      var credits = (creditResult.data && creditResult.data.credits) || 0;
+      return credits > 0;
+    } catch (e) {
+      console.error('[FluxReel] Falha ao checar plano/créditos:', e);
+      return false;
+    }
+  }
+
+  async function createSeriesAndGenerate() {
+    try {
+      var series = await apiPost('/api/create-series', {
+        name: state.seriesName,
+        niche: state.niche,
+        language: state.language,
+        voice: state.voice,
+        music: state.music,
+        style: state.style,
+        captionStyle: state.captionStyle,
+        glitch: state.glitch,
+        hook: state.hook,
+        duration: state.duration,
+      });
+      startVideoGeneration(series.series_id);
+    } catch (e) {
+      console.error('[FluxReel] Erro ao criar série:', e);
+      showToast(e.message || 'Não foi possível criar a série.');
+    }
+  }
+
+  document.getElementById('btn-next').addEventListener('click', async function () {
     var err = validateStep(state.step);
     if (err) { showError(err); return; }
     if (state.step === TOTAL_STEPS) {
+      var btn = this;
+      btn.disabled = true;
+      var direct = await canGenerateDirectly();
+      btn.disabled = false;
+      var onDone = direct ? createSeriesAndGenerate : openPaywall;
       // A animação falsa de "gerando vídeo" só aparece pra quem já tem conta
       // e veio dos botões "Nova série"/"Criar uma série" do painel (?new=1)
       // — quem está se cadastrando pela primeira vez vai direto pro popup.
       if (landingParams.get('new') === '1') {
-        playFakeGeneration(openPaywall);
+        playFakeGeneration(onDone);
       } else {
-        openPaywall();
+        onDone();
       }
       return;
     }
