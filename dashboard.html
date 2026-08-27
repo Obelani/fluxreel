@@ -151,6 +151,65 @@
   @media (min-width: 640px) { .modal-card { padding: 32px; } }
   .modal-card h2 { font-size: 22px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.01em; }
 
+  /* ---------- Modal de planos (mesmo padrão do wizard) ---------- */
+  .modal-card.paywall-card { max-width: 880px; text-align: left; }
+  .modal-card.paywall-card > p { margin-top: 6px; font-size: 14px; color: var(--text-muted); max-width: 560px; }
+  .modal-close { position: absolute; right: 20px; top: 20px; background: none; border: none; color: var(--text-faint); font-size: 18px; }
+  .modal-close:hover { color: #fff; }
+  .modal-grid { margin-top: 24px; display: grid; gap: 32px; }
+  @media (min-width: 900px) { .modal-grid { grid-template-columns: 1fr 300px; } }
+
+  .switch { position: relative; flex-shrink: 0; height: 24px; width: 44px; border-radius: 999px; background: rgba(255,255,255,0.15); border: none; transition: background 0.2s ease; }
+  .switch .knob { position: absolute; left: 2px; top: 2px; height: 20px; width: 20px; border-radius: 999px; background: #fff; transition: transform 0.2s ease; }
+  .switch.is-on { background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan)); }
+  .switch.is-on .knob { transform: translateX(20px); }
+
+  .cycle-row { display: flex; align-items: center; gap: 12px; font-size: 14px; margin-bottom: 20px; }
+  .cycle-row .cycle-label { color: var(--text-faint); }
+  .cycle-row .cycle-label.active { color: #fff; font-weight: 600; }
+  .save-badge { border-radius: 999px; border: 1px solid var(--border-soft); background: var(--surface-2); padding: 4px 10px; font-size: 12px; color: #d4d4d8; }
+
+  .plan-list { display: flex; flex-direction: column; gap: 12px; }
+  .plan-card { position: relative; display: block; width: 100%; border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 16px 20px; text-align: left; transition: all 0.2s ease; }
+  .plan-card:hover { background: var(--surface-3); }
+  .plan-card.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
+  .plan-card .plan-tag { position: absolute; top: -11px; left: 20px; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #fff; background-image: linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); }
+  .plan-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .plan-row .plan-name { font-weight: 600; }
+  .plan-row .plan-freq { font-size: 13px; color: var(--text-muted); }
+  .plan-price-line { margin-top: 6px; font-size: 14px; }
+  .plan-price-line .old { color: rgba(255,255,255,0.45); text-decoration: line-through; margin-right: 6px; }
+  .plan-price-line .new { color: #fff; font-weight: 600; }
+  .plan-per-video { flex-shrink: 0; text-align: right; }
+  .plan-per-video .amount { font-size: 18px; font-weight: 700; color: #fff; }
+  .plan-per-video .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); }
+
+  .qty-box { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 16px 20px; }
+  .qty-box .qty-title { font-size: 14px; font-weight: 500; color: #e4e4e7; }
+  .qty-box .qty-desc { margin-top: 2px; font-size: 12px; color: var(--text-faint); }
+  .qty-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .qty-btn { height: 32px; width: 32px; border-radius: 999px; border: 1px solid var(--border-soft); background: transparent; color: #d4d4d8; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .qty-btn:hover { background: rgba(255,255,255,0.05); }
+  .qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .qty-value { width: 18px; text-align: center; font-size: 14px; font-weight: 600; }
+
+  .total-row { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; border-radius: 14px; background: var(--surface-3); padding: 16px 20px; }
+  .total-row .label { font-size: 14px; color: var(--text-muted); }
+  .total-row .amount { font-size: 20px; font-weight: 700; }
+  .total-row .amount .per { font-size: 13px; font-weight: 400; color: var(--text-faint); margin-left: 4px; }
+  .subscribe-btn { margin-top: 16px; width: 100%; padding: 14px; font-size: 14px; font-weight: 600; }
+
+  .perks-title { font-size: 14px; font-weight: 600; color: #d4d4d8; }
+  .perks-list { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .perks-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: #d4d4d8; }
+  .perks-list li .check { color: #6ee7b7; flex-shrink: 0; margin-top: 1px; }
+  .testimonial-box { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .testimonial-card { border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 14px; }
+  .testimonial-card p { margin: 0; font-size: 14px; line-height: 1.5; color: #d4d4d8; }
+  .testimonial-card .author { margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--text-faint); }
+
+  .btn-upgrade { display: inline-flex; align-items: center; gap: 6px; }
+
   /* ---------- Barra de ícones fixa (mobile/tablet) ---------- */
   .dash-topbar-mobile { display: none; }
 
@@ -299,6 +358,69 @@
       <button type="button" class="btn btn-outline" id="btn-sair-config">Sair da conta</button>
     </section>
   </main>
+</div>
+
+<!-- ===================== MODAL — PLANOS ===================== -->
+<div class="modal-overlay" id="paywall-overlay" hidden>
+  <div class="modal-card paywall-card">
+    <button type="button" class="modal-close" id="paywall-close" aria-label="Fechar">✕</button>
+    <h2>Assine um plano para continuar</h2>
+    <p>Sua assinatura não está ativa. Escolha um plano pra voltar a gerar vídeos nas suas séries.</p>
+
+    <div class="modal-grid">
+      <div>
+        <div class="cycle-row">
+          <span class="cycle-label active" id="label-mensal">Mensal</span>
+          <button type="button" class="switch" id="switch-cycle" role="switch" aria-checked="false"><span class="knob"></span></button>
+          <span class="cycle-label" id="label-anual">Anual</span>
+          <span class="save-badge">Economize 25%</span>
+        </div>
+
+        <div class="plan-list" id="plan-list"></div>
+
+        <div class="qty-box">
+          <div>
+            <div class="qty-title">Quantas séries?</div>
+            <p class="qty-desc" id="qty-desc">Cada série roda no ritmo escolhido — 1 vídeo no total a cada dia.</p>
+          </div>
+          <div class="qty-controls">
+            <button type="button" class="qty-btn" id="qty-minus" aria-label="Diminuir número de séries">−</button>
+            <span class="qty-value" id="qty-value">1</span>
+            <button type="button" class="qty-btn" id="qty-plus" aria-label="Aumentar número de séries">+</button>
+          </div>
+        </div>
+
+        <div class="total-row">
+          <span class="label">Total por mês</span>
+          <span class="amount" id="total-amount">R$ 0,00<span class="per">/mês</span></span>
+        </div>
+
+        <button type="button" class="btn btn-gradient subscribe-btn" id="btn-subscribe">Assinar agora</button>
+      </div>
+
+      <div>
+        <div class="perks-title">O que você recebe</div>
+        <ul class="perks-list">
+          <li><span class="check">✓</span>Roteiro, narração, imagens e legendas gerados por IA</li>
+          <li><span class="check">✓</span>Música de fundo à sua escolha</li>
+          <li><span class="check">✓</span>6+ estilos visuais de vídeo</li>
+          <li><span class="check">✓</span>Voz de IA personalizada</li>
+          <li><span class="check">✓</span>Sem marca d'água</li>
+          <li><span class="check">✓</span>Você aprova cada vídeo antes de gastar seus créditos</li>
+        </ul>
+        <div class="testimonial-box">
+          <div class="testimonial-card">
+            <p>"Eu travava toda semana tentando editar. Agora só reviso o que a IA gera e publico — meu maior gargalo sumiu."</p>
+            <div class="author">Rafael M.</div>
+          </div>
+          <div class="testimonial-card">
+            <p>"É praticamente hands-off. Configuro a série uma vez e os vídeos aparecem prontos todo santo dia."</p>
+            <div class="author">Bianca S.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ===================== MODAL — GERAÇÃO DO VÍDEO ===================== -->
@@ -501,7 +623,7 @@
       }
       var footer = '';
       if (v.status === 'ready' && v.video_url) {
-        footer = '<a class="btn btn-outline btn-sm" href="' + v.video_url + '" download target="_blank" rel="noopener">Baixar ⬇</a>';
+        footer = '<button type="button" class="btn btn-outline btn-sm" data-download="' + v.video_url + '" data-filename="' + videoTitle(v).replace(/"/g, '') + '.mp4">Baixar ⬇</button>';
       } else if (v.status === 'failed') {
         footer = '<button type="button" class="btn btn-outline btn-sm" data-retry="' + v.series_id + '">Gerar de novo</button>';
       }
@@ -519,6 +641,39 @@
     list.querySelectorAll('[data-retry]').forEach(function (btn) {
       btn.addEventListener('click', function () { startVideoGeneration(btn.getAttribute('data-retry')); });
     });
+    list.querySelectorAll('[data-download]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        downloadVideo(btn.getAttribute('data-download'), btn.getAttribute('data-filename'), btn);
+      });
+    });
+  }
+
+  // Baixa o vídeo de verdade (em vez de só abrir a página do arquivo) —
+  // busca os bytes e usa um link temporário com blob: (mesma origem),
+  // que o navegador sempre respeita o atributo download, diferente de um
+  // link direto pra um domínio externo (Creatomate), que muitos navegadores
+  // ignoram e só abrem numa aba nova.
+  async function downloadVideo(url, filename, btn) {
+    var originalLabel = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Baixando…'; }
+    try {
+      var res = await fetch(url);
+      if (!res.ok) throw new Error('Falha ao buscar o vídeo (' + res.status + ')');
+      var blob = await res.blob();
+      var blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'video.mp4';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 4000);
+    } catch (e) {
+      console.error('[FluxReel] Download direto falhou, abrindo em nova aba:', e);
+      window.open(url, '_blank');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+    }
   }
 
   async function loadSeriesAndVideos() {
@@ -552,9 +707,12 @@
       configStatus.textContent = 'Plano ' + planLabel + ' (' + cycleLabel.toLowerCase() + '), ' + sub.quantity + ' série(s).';
       manageBtn.textContent = 'Gerenciar assinatura';
     } else {
-      widget.innerHTML = '<div class="title">Sem assinatura ativa</div><div class="sub">Assine um plano pra começar a gerar vídeos.</div><a href="/create-series.html?new=1" class="cta text-gradient">Ver planos →</a>';
+      widget.innerHTML = '<div class="title">Sem assinatura ativa</div><div class="sub">Assine um plano pra começar a gerar vídeos.</div>' +
+        '<button type="button" class="btn btn-gradient btn-sm btn-upgrade" id="btn-upgrade-sidebar" style="margin-top:10px;width:100%;">⚡ Upgrade</button>';
       configStatus.textContent = 'Você não tem uma assinatura ativa no momento.';
-      manageBtn.textContent = 'Ver planos';
+      manageBtn.innerHTML = '⚡ Upgrade';
+      var sidebarUpgradeBtn = document.getElementById('btn-upgrade-sidebar');
+      if (sidebarUpgradeBtn) sidebarUpgradeBtn.addEventListener('click', openPaywall);
     }
 
     try {
@@ -569,8 +727,8 @@
 
   document.getElementById('btn-manage-subscription').addEventListener('click', async function () {
     var btn = this;
-    if (btn.textContent === 'Ver planos') {
-      window.location.href = '/create-series.html?new=1';
+    if (btn.textContent.indexOf('Upgrade') !== -1) {
+      openPaywall();
       return;
     }
     try {
@@ -580,6 +738,129 @@
       showToast(e.message || 'Não foi possível abrir o painel de assinatura.');
     }
   });
+
+  // ===================== MODAL DE PLANOS =====================
+  var PLANS = [
+    { id: 'inicial', name: 'Inicial', freq: '3 vídeos por semana', oldPrice: 27.90, price: 19.90, perVideo: 1.53, tag: null },
+    { id: 'diario', name: 'Diário', freq: '1 vídeo por dia', oldPrice: 44.90, price: 29.90, perVideo: 1.00, tag: 'Mais popular' },
+    { id: 'pro', name: 'Pro', freq: '2 vídeos por dia', oldPrice: 69.90, price: 49.90, perVideo: 0.83, tag: 'Melhor para crescer' },
+  ];
+  var payState = { billingCycle: 'monthly', plan: 'diario', quantity: 1 };
+
+  function fmtBRL(n) { return 'R$ ' + n.toFixed(2).replace('.', ','); }
+
+  var planList = document.getElementById('plan-list');
+  function renderPlans() {
+    planList.innerHTML = PLANS.map(function (p) {
+      var isAnnual = payState.billingCycle === 'annual';
+      var price = isAnnual ? p.price * 0.75 : p.price;
+      var perVideo = isAnnual ? p.perVideo * 0.75 : p.perVideo;
+      var selected = payState.plan === p.id;
+      return '' +
+        '<button type="button" class="plan-card' + (selected ? ' is-selected' : '') + '" data-plan="' + p.id + '">' +
+          (p.tag ? '<span class="plan-tag">' + p.tag + '</span>' : '') +
+          '<div class="plan-row">' +
+            '<div><span class="plan-name">' + p.name + '</span> <span class="plan-freq">' + p.freq + '</span>' +
+              '<div class="plan-price-line"><span class="old">' + fmtBRL(p.oldPrice) + '</span><span class="new">' + fmtBRL(price) + (isAnnual ? '/mês (anual)' : '/mês') + '</span></div>' +
+            '</div>' +
+            '<div class="plan-per-video"><div class="amount">' + fmtBRL(perVideo) + '</div><div class="label">por vídeo</div></div>' +
+          '</div>' +
+        '</button>';
+    }).join('');
+    planList.querySelectorAll('.plan-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        payState.plan = card.getAttribute('data-plan');
+        renderPlans();
+        updateTotal();
+      });
+    });
+  }
+
+  function currentPlanPrice() {
+    var plan = PLANS.filter(function (p) { return p.id === payState.plan; })[0];
+    return payState.billingCycle === 'annual' ? plan.price * 0.75 : plan.price;
+  }
+
+  function updateTotal() {
+    var total = currentPlanPrice() * payState.quantity;
+    document.getElementById('total-amount').innerHTML = fmtBRL(total) + '<span class="per">/mês</span>';
+    document.getElementById('qty-desc').textContent = payState.quantity === 1
+      ? 'Cada série roda no ritmo escolhido — 1 vídeo no total a cada dia.'
+      : payState.quantity + ' séries rodando ao mesmo tempo, cada uma no ritmo escolhido.';
+  }
+
+  document.getElementById('switch-cycle').addEventListener('click', function () {
+    var isAnnual = payState.billingCycle !== 'annual';
+    payState.billingCycle = isAnnual ? 'annual' : 'monthly';
+    this.classList.toggle('is-on', isAnnual);
+    this.setAttribute('aria-checked', String(isAnnual));
+    document.getElementById('label-mensal').classList.toggle('active', !isAnnual);
+    document.getElementById('label-anual').classList.toggle('active', isAnnual);
+    renderPlans();
+    updateTotal();
+  });
+  document.getElementById('qty-minus').addEventListener('click', function () {
+    if (payState.quantity > 1) { payState.quantity--; refreshQty(); }
+  });
+  document.getElementById('qty-plus').addEventListener('click', function () {
+    if (payState.quantity < 10) { payState.quantity++; refreshQty(); }
+  });
+  function refreshQty() {
+    document.getElementById('qty-value').textContent = payState.quantity;
+    document.getElementById('qty-minus').disabled = payState.quantity <= 1;
+    document.getElementById('qty-plus').disabled = payState.quantity >= 10;
+    updateTotal();
+  }
+
+  function openPaywall() {
+    renderPlans();
+    refreshQty();
+    updateTotal();
+    document.getElementById('paywall-overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closePaywall() {
+    document.getElementById('paywall-overlay').hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.getElementById('paywall-close').addEventListener('click', closePaywall);
+  document.getElementById('paywall-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closePaywall();
+  });
+
+  document.getElementById('btn-subscribe').addEventListener('click', async function () {
+    var btn = this;
+    btn.disabled = true;
+    var originalLabel = btn.textContent;
+    btn.textContent = 'Preparando pagamento…';
+    try {
+      var checkout = await apiPost('/api/create-checkout-session', {
+        plan_id: payState.plan,
+        billing_cycle: payState.billingCycle,
+        quantity: payState.quantity,
+        return_path: '/dashboard',
+      });
+      window.location.href = checkout.url;
+    } catch (e) {
+      console.error('[FluxReel] Erro ao iniciar pagamento:', e);
+      showToast(e.message || 'Não foi possível iniciar o pagamento.');
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
+  });
+
+  // Volta do Checkout: ?success=1 confirma o pagamento (não cria vídeo
+  // automaticamente aqui — o usuário escolhe qual série gerar na aba Séries).
+  (function handleCheckoutReturn() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('success') === '1') {
+      showToast('✅ Pagamento confirmado! Seus créditos já foram liberados.');
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('canceled') === '1') {
+      showToast('Pagamento cancelado — nada foi cobrado.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  })();
 
   // ===================== GERAÇÃO DE VÍDEO =====================
   var GEN_STATUS_INFO = {

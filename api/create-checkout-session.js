@@ -3,10 +3,16 @@ const { getAuthenticatedUser } = require('./_lib/auth');
 const { getSupabaseAdmin } = require('./_lib/supabaseAdmin');
 const { getPriceId } = require('./_lib/plans');
 
+// Só páginas conhecidas do próprio site — nunca usar um valor de
+// return_path sem checar contra essa lista (evita redirect aberto através
+// da Checkout Session da Stripe).
+const ALLOWED_RETURN_PATHS = ['/create-series.html', '/dashboard'];
+
 // Cria a Checkout Session da Stripe (modo assinatura) pro plano escolhido
-// no paywall. Chamado pelo botão "Assinar e criar minha série" em
-// create-series.html. Os créditos só são liberados depois, no webhook,
-// quando a Stripe confirmar o pagamento.
+// no paywall — chamado tanto pelo wizard (create-series.html, ao criar a
+// primeira série) quanto pelo dashboard (botão "Upgrade", reativando uma
+// assinatura pra uma conta que já tem série). Os créditos só são liberados
+// depois, no webhook, quando a Stripe confirmar o pagamento.
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método não permitido' });
@@ -28,6 +34,7 @@ module.exports = async (req, res) => {
     }
     const quantity = Math.max(1, Math.min(10, parseInt(body.quantity, 10) || 1));
     const seriesId = body.series_id || '';
+    const returnPath = ALLOWED_RETURN_PATHS.indexOf(body.return_path) !== -1 ? body.return_path : '/create-series.html';
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const supabase = getSupabaseAdmin();
@@ -61,8 +68,8 @@ module.exports = async (req, res) => {
       mode: 'subscription',
       customer: customerId,
       line_items: [{ price: priceId, quantity: quantity }],
-      success_url: origin + '/create-series.html?success=1&series_id=' + encodeURIComponent(seriesId) + '&session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: origin + '/create-series.html?canceled=1',
+      success_url: origin + returnPath + '?success=1' + (seriesId ? '&series_id=' + encodeURIComponent(seriesId) : '') + '&session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: origin + returnPath + '?canceled=1',
       metadata: metadata,
       subscription_data: { metadata: metadata },
     });
