@@ -27,7 +27,24 @@ async function generateImage(prompt) {
   return data.images[0].url;
 }
 
-// Etapa 2: gera uma imagem por cena (fal.ai / Z-Image Turbo), em paralelo.
+// Gera as imagens em lotes de até `concurrency` por vez, em vez de disparar
+// tudo de uma vez — a conta do fal.ai tem limite de 10 requisições
+// simultâneas, e um vídeo de 60-90s já tem até 11 cenas sozinho.
+async function generateImagesLimited(prompts, concurrency) {
+  const results = new Array(prompts.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < prompts.length) {
+      const i = nextIndex++;
+      results[i] = await generateImage(prompts[i]);
+    }
+  }
+  await Promise.all(new Array(Math.min(concurrency, prompts.length)).fill(0).map(worker));
+  return results;
+}
+
+// Etapa 2: gera uma imagem por cena (fal.ai / Z-Image Turbo), com
+// concorrência limitada.
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).end();
@@ -57,12 +74,10 @@ module.exports = async (req, res) => {
     const styleSuffix = STYLE_PROMPTS[video.series.style] || '';
     const scenes = video.script.scenes;
 
-    const imageUrls = await Promise.all(
-      scenes.map(function (scene) {
-        const prompt = scene.visual + (styleSuffix ? ', ' + styleSuffix : '');
-        return generateImage(prompt);
-      })
-    );
+    const prompts = scenes.map(function (scene) {
+      return scene.visual + (styleSuffix ? ', ' + styleSuffix : '');
+    });
+    const imageUrls = await generateImagesLimited(prompts, 4);
 
     await supabase
       .from('videos')
