@@ -82,6 +82,12 @@ alter table public.videos enable row level security;
 drop policy if exists "select own series" on public.series;
 create policy "select own series" on public.series for select using (auth.uid() = user_id);
 
+-- Usuário pode excluir a própria série direto do client (dashboard.html) —
+-- series_id em videos é "on delete cascade", então os vídeos dela somem
+-- junto (os arquivos no Storage não são limpos automaticamente).
+drop policy if exists "delete own series" on public.series;
+create policy "delete own series" on public.series for delete using (auth.uid() = user_id);
+
 drop policy if exists "select own subscriptions" on public.subscriptions;
 create policy "select own subscriptions" on public.subscriptions for select using (auth.uid() = user_id);
 

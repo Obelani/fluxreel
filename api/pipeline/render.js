@@ -126,25 +126,62 @@ function buildAssSubtitles(words, style, videoWidth, videoHeight) {
   return header + body + '\n';
 }
 
-// Slideshow de imagens (uma por cena, com a duração calculada) via concat
-// demuxer do ffmpeg. O último arquivo precisa ser repetido sem `duration`
-// por uma particularidade do concat demuxer (a duração do último item da
-// lista normalmente não é aplicada).
-async function buildVisuals(workDir, imagePaths, sceneDurations, width, height) {
-  const listPath = path.join(workDir, 'images.txt');
-  const lines = imagePaths.map(function (p, i) {
-    return "file '" + p + "'\nduration " + sceneDurations[i].toFixed(3);
-  });
-  lines.push("file '" + imagePaths[imagePaths.length - 1] + "'");
-  await fsp.writeFile(listPath, lines.join('\n') + '\n');
+const TRANSITION_DURATION = 0.5;
+const TRANSITIONS = ['fade', 'dissolve', 'slideleft', 'slideright'];
 
+// Slideshow de imagens (uma por cena) com transição entre elas via `xfade`
+// (fade/dissolve/slide alternados) em vez de corte seco. Cada imagem entra
+// como um input de vídeo estático (`-loop 1 -t duração`) e as transições
+// são encadeadas num filter_complex — mais trabalhoso que o concat demuxer
+// de antes, mas é a forma do ffmpeg de sobrepor um clipe no outro.
+async function buildVisuals(workDir, imagePaths, sceneDurations, width, height) {
+  const n = imagePaths.length;
+  const scaleFilter = 'scale=' + width + ':' + height + ':force_original_aspect_ratio=increase,crop=' + width + ':' + height + ',setsar=1,fps=30,format=yuv420p';
   const visualsPath = path.join(workDir, 'visuals.mp4');
-  await runFfmpeg([
-    '-y', '-f', 'concat', '-safe', '0', '-i', listPath,
-    '-vf', 'scale=' + width + ':' + height + ':force_original_aspect_ratio=increase,crop=' + width + ':' + height + ',setsar=1,fps=30',
+
+  if (n === 1) {
+    await runFfmpeg([
+      '-y', '-loop', '1', '-t', sceneDurations[0].toFixed(3), '-i', imagePaths[0],
+      '-vf', scaleFilter,
+      '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+      visualsPath,
+    ]);
+    return visualsPath;
+  }
+
+  const T = TRANSITION_DURATION;
+  // Cada xfade sobrepõe T segundos de um clipe no outro, então o total
+  // encolhe (n-1)*T se não compensarmos — infla a duração de cada cena
+  // (exceto a última) em T pra o resultado final bater com a narração.
+  const durations = sceneDurations.map(function (d, i) { return i < n - 1 ? d + T : d; });
+
+  const args = ['-y'];
+  imagePaths.forEach(function (p, i) {
+    args.push('-loop', '1', '-t', durations[i].toFixed(3), '-i', p);
+  });
+
+  const filterParts = imagePaths.map(function (p, i) {
+    return '[' + i + ':v]' + scaleFilter + '[v' + i + ']';
+  });
+
+  let cum = durations[0];
+  let lastLabel = 'v0';
+  for (let i = 1; i < n; i++) {
+    const offset = cum - T;
+    const outLabel = i === n - 1 ? 'vout' : 'vx' + i;
+    const transition = TRANSITIONS[(i - 1) % TRANSITIONS.length];
+    filterParts.push('[' + lastLabel + '][v' + i + ']xfade=transition=' + transition + ':duration=' + T + ':offset=' + offset.toFixed(3) + '[' + outLabel + ']');
+    cum = cum + durations[i] - T;
+    lastLabel = outLabel;
+  }
+
+  args.push(
+    '-filter_complex', filterParts.join(';'),
+    '-map', '[vout]',
     '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
-    visualsPath,
-  ]);
+    visualsPath
+  );
+  await runFfmpeg(args);
   return visualsPath;
 }
 

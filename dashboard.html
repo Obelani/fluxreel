@@ -106,11 +106,23 @@
   /* ---------- Séries ---------- */
   .series-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
   @media (min-width: 680px) { .series-grid { grid-template-columns: repeat(2, 1fr); } }
-  .series-card { border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
-  .series-card .name { font-size: 16px; font-weight: 600; }
-  .series-card .meta { font-size: 13px; color: var(--text-muted); }
-  .series-card .footer { margin-top: 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .series-card .video-count { font-size: 12px; color: var(--text-faint); }
+  .series-card { position: relative; border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+  .series-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background-image: linear-gradient(90deg, var(--brand-blue) 0%, #6A5CFF 50%, var(--brand-cyan) 100%); }
+  .series-card .head { display: flex; align-items: flex-start; gap: 12px; }
+  .series-card .badge { flex-shrink: 0; width: 28px; height: 28px; border-radius: 999px; border: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text-faint); margin-top: 2px; }
+  .series-card .head-main { flex: 1; min-width: 0; }
+  .series-card .name-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .series-card .name { font-size: 17px; font-weight: 700; }
+  .series-card .name-count { font-size: 12px; color: var(--text-faint); }
+  .series-card .meta { margin-top: 4px; font-size: 13px; color: var(--text-muted); }
+  .series-card .date { margin-top: 2px; font-size: 12px; color: var(--text-faint); }
+  .series-card .btn-delete { flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border-soft); background: transparent; color: var(--text-faint); display: flex; align-items: center; justify-content: center; }
+  .series-card .btn-delete:hover { color: #f97066; border-color: rgba(249,112,102,0.4); background: rgba(249,112,102,0.08); }
+  .series-card .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .series-card .chip { font-size: 12px; color: var(--text-muted); border: 1px solid var(--border-soft); border-radius: 999px; padding: 6px 12px; }
+  .series-card .videos-row { margin-top: 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .series-card .videos-row .label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+  .series-card .videos-empty-box { border-radius: 10px; border: 1px solid var(--border-soft); background: var(--surface-2); padding: 14px 16px; font-size: 13px; color: var(--text-faint); text-align: center; }
 
   /* ---------- Vídeos ---------- */
   .video-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
@@ -314,7 +326,7 @@
 
     <section class="dash-section" id="section-videos" hidden>
       <div class="dash-section-header">
-        <div><h1>Vídeos</h1></div>
+        <div><h1>Vídeos</h1><p id="videos-filter-note" style="margin-top:4px; font-size:13px; color:var(--text-muted);" hidden></p></div>
         <button type="button" class="dash-nav-item link-arrow" data-tab="series" style="width:auto;padding:8px 4px;">Minhas séries →</button>
       </div>
       <div id="video-list" class="video-list"></div>
@@ -527,7 +539,13 @@
     }
   }
   document.querySelectorAll('[data-tab]').forEach(function (btn) {
-    btn.addEventListener('click', function () { showTab(btn.getAttribute('data-tab')); });
+    btn.addEventListener('click', function () {
+      var tab = btn.getAttribute('data-tab');
+      // Navegar pra "Vídeos" pelo menu (em vez do botão "Ver vídeos" de uma
+      // série específica) sempre mostra todos, limpando um filtro anterior.
+      if (tab === 'videos' && videoFilterSeriesId) { videoFilterSeriesId = null; renderVideos(); }
+      showTab(tab);
+    });
   });
   window.addEventListener('popstate', function () {
     showTab(PATH_TABS[window.location.pathname] || 'series', true);
@@ -541,6 +559,29 @@
     narration: 'Gravando a narração', captions: 'Sincronizando as legendas', rendering: 'Montando o vídeo final',
   };
 
+  // Mesmos rótulos usados no wizard (create-series.html) — a série guarda só
+  // o valor interno (ex.: 'pt-BR', 'comic'), esses mapas traduzem pra exibição.
+  var NICHE_LABELS = {
+    terror: 'Terror', mitologia: 'Mitologia', 'historias-reais': 'Histórias reais', curiosidades: 'Curiosidades',
+    motivacao: 'Motivação', conspiracoes: 'Conspirações', ciencia: 'Ciência', ficcao: 'Ficção',
+  };
+  var LANG_LABELS = { 'pt-BR': 'Português (Brasil)', 'en-US': 'Inglês', 'es-ES': 'Espanhol' };
+  var STYLE_LABELS = {
+    comic: 'Comic', 'creepy-comic': 'Creepy Comic', 'modern-cartoon': 'Modern Cartoon', disney: 'Disney',
+    mythology: 'Mythology', 'pixel-art': 'Pixel Art', ghibli: 'Ghibli', anime: 'Anime', painting: 'Painting',
+    'dark-fantasy': 'Dark Fantasy', lego: 'Lego', realism: 'Realism', fantastic: 'Fantastic',
+  };
+  var CAPTION_LABELS = {
+    classic: 'Legenda Clássica', 'bold-yellow': 'Legenda Bold Amarelo', neon: 'Legenda Neon',
+    blackbox: 'Legenda Caixa Preta', 'gradient-word': 'Legenda Karaokê Gradiente',
+  };
+  var DURATION_LABELS = { '15-30': '15 a 30 segundos', '30-40': '30 a 40 segundos', '40-60': '40 a 60 segundos', '60-90': '60 a 90 segundos' };
+
+  function fmtDate(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString('pt-BR');
+  }
+
   var seriesRows = [];
   var videoRows = [];
 
@@ -553,23 +594,70 @@
     return videoRows.filter(function (v) { return v.series_id === seriesId; }).length;
   }
 
+  function seriesChips(s) {
+    var chips = [
+      LANG_LABELS[s.language] || s.language,
+      DURATION_LABELS[s.duration_bucket] || s.duration_bucket,
+      CAPTION_LABELS[s.caption_style] || s.caption_style,
+    ];
+    if (s.glitch) chips.push('Efeito Glitch');
+    if (s.hook) chips.push('Hook automático');
+    return chips.map(function (c) { return '<span class="chip">' + c + '</span>'; }).join('');
+  }
+
   function renderSeries() {
     var grid = document.getElementById('series-grid');
     document.getElementById('series-empty').hidden = seriesRows.length > 0;
-    grid.innerHTML = seriesRows.map(function (s) {
+    grid.innerHTML = seriesRows.map(function (s, i) {
+      var count = videoCountFor(s.id);
+      var videosBody = count > 0
+        ? '<button type="button" class="btn btn-outline btn-sm" style="width:100%;" data-ver-videos="' + s.id + '">Ver vídeos</button>'
+        : '<div class="videos-empty-box">Nenhum vídeo gerado ainda. Clique em "Gerar vídeo" pra criar o primeiro.</div>';
       return '' +
         '<div class="series-card">' +
-          '<div><div class="name">' + s.name + '</div>' +
-          '<div class="meta">' + s.niche + ' · ' + s.style + ' · ' + s.duration_bucket + 's</div></div>' +
-          '<div class="footer">' +
-            '<span class="video-count">' + videoCountFor(s.id) + ' vídeo(s) gerado(s)</span>' +
-            '<button type="button" class="btn btn-gradient btn-sm" data-generate="' + s.id + '">Gerar vídeo</button>' +
+          '<div class="head">' +
+            '<span class="badge">' + (i + 1) + '</span>' +
+            '<div class="head-main">' +
+              '<div class="name-row"><span class="name">' + s.name + '</span><span class="name-count">' + count + ' vídeo(s)</span></div>' +
+              '<div class="meta">' + (NICHE_LABELS[s.niche] || s.niche) + ' · ' + s.voice + ' · ' + (STYLE_LABELS[s.style] || s.style) + '</div>' +
+              '<div class="date">Criada em ' + fmtDate(s.created_at) + '</div>' +
+            '</div>' +
+            '<button type="button" class="btn-delete" data-delete-series="' + s.id + '" title="Excluir série" aria-label="Excluir série">' +
+              '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 5.5h13M8 5.5V4a1.5 1.5 0 0 1 1.5-1.5h1A1.5 1.5 0 0 1 12 4v1.5M5.5 5.5v10a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-10" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            '</button>' +
           '</div>' +
+          '<div class="chips">' + seriesChips(s) + '</div>' +
+          '<div class="videos-row"><span class="label">Vídeos</span><button type="button" class="btn btn-gradient btn-sm" data-generate="' + s.id + '">Gerar vídeo</button></div>' +
+          videosBody +
         '</div>';
     }).join('');
     grid.querySelectorAll('[data-generate]').forEach(function (btn) {
       btn.addEventListener('click', function () { startVideoGeneration(btn.getAttribute('data-generate')); });
     });
+    grid.querySelectorAll('[data-ver-videos]').forEach(function (btn) {
+      btn.addEventListener('click', function () { openSeriesVideos(btn.getAttribute('data-ver-videos')); });
+    });
+    grid.querySelectorAll('[data-delete-series]').forEach(function (btn) {
+      btn.addEventListener('click', function () { deleteSeries(btn.getAttribute('data-delete-series')); });
+    });
+  }
+
+  async function deleteSeries(seriesId) {
+    var series = seriesFor(seriesId);
+    var name = series ? series.name : 'essa série';
+    if (!window.confirm('Excluir "' + name + '"? Os vídeos gerados por ela também serão apagados. Essa ação não pode ser desfeita.')) return;
+    try {
+      var result = await supabase.from('series').delete().eq('id', seriesId);
+      if (result.error) throw result.error;
+      seriesRows = seriesRows.filter(function (s) { return s.id !== seriesId; });
+      videoRows = videoRows.filter(function (v) { return v.series_id !== seriesId; });
+      renderSeries();
+      renderVideos();
+      showToast('Série excluída.');
+    } catch (e) {
+      console.error('[FluxReel] Falha ao excluir série:', e);
+      showToast('Não foi possível excluir a série.');
+    }
   }
 
   function seriesNameFor(seriesId) {
@@ -610,10 +698,30 @@
     return parts.join(' · ');
   }
 
+  var videoFilterSeriesId = null;
+
+  function openSeriesVideos(seriesId) {
+    videoFilterSeriesId = seriesId;
+    renderVideos();
+    showTab('videos');
+  }
+
   function renderVideos() {
     var list = document.getElementById('video-list');
-    document.getElementById('videos-empty').hidden = videoRows.length > 0;
-    list.innerHTML = videoRows.map(function (v) {
+    var rows = videoFilterSeriesId ? videoRows.filter(function (v) { return v.series_id === videoFilterSeriesId; }) : videoRows;
+
+    var note = document.getElementById('videos-filter-note');
+    if (videoFilterSeriesId) {
+      note.hidden = false;
+      note.innerHTML = 'Mostrando vídeos de <strong>' + seriesNameFor(videoFilterSeriesId) + '</strong> · <a href="#" id="clear-video-filter" class="text-gradient" style="font-weight:600;">ver todos</a>';
+      var clearLink = document.getElementById('clear-video-filter');
+      if (clearLink) clearLink.addEventListener('click', function (e) { e.preventDefault(); videoFilterSeriesId = null; renderVideos(); });
+    } else {
+      note.hidden = true;
+    }
+
+    document.getElementById('videos-empty').hidden = rows.length > 0;
+    list.innerHTML = rows.map(function (v) {
       var preview;
       if (v.status === 'ready' && v.video_url) {
         preview = '<div class="preview-wrap"><video src="' + v.video_url + '" controls></video></div>';
