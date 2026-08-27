@@ -39,34 +39,31 @@ const STYLE_PROMPTS = {
 };
 
 // Estilo de legenda escolhido -> estilo do texto queimado no vídeo (Creatomate).
-// Usa o recurso nativo de transcript (transcript_effect + transcript_source)
-// da Creatomate — um único elemento de texto anima palavra por palavra
-// sozinho, em vez de a gente montar dezenas de blocos de texto manualmente.
+// Montado manualmente (1-2 palavras por vez, em maiúsculas, com fundo tipo
+// "pílula" que se ajusta ao tamanho do texto) em vez de depender do recurso
+// nativo de transcript da Creatomate — não deu pra confirmar com certeza o
+// comportamento exato dele (fill_color vs transcript_color, largura fixa
+// virando barra em vez de pílula), então preferimos controle total.
 const CAPTION_STYLES = {
   classic: {
-    font_family: 'Arial', font_weight: '700', fill_color: '#FFFFFF',
+    font_family: 'Montserrat', font_weight: '800', fill_color: '#FFFFFF',
     stroke_color: '#000000', stroke_width: '1.4 vmin',
-    transcript_effect: 'highlight', transcript_color: '#FFD500',
   },
   'bold-yellow': {
-    font_family: 'Arial', font_weight: '900', fill_color: '#FFD500',
-    stroke_color: '#000000', stroke_width: '1.8 vmin',
-    transcript_effect: 'highlight', transcript_color: '#FFFFFF',
+    font_family: 'Montserrat', font_weight: '900', fill_color: '#000000',
+    background_color: '#FFD500', background_x_padding: '35%', background_y_padding: '20%', background_border_radius: '30%',
   },
   neon: {
-    font_family: 'Arial', font_weight: '800', fill_color: '#20D9FF',
-    stroke_color: '#0A2A33', stroke_width: '1.4 vmin',
-    transcript_effect: 'highlight', transcript_color: '#FF3DAD',
+    font_family: 'Montserrat', font_weight: '800', fill_color: '#0A2A33',
+    background_color: '#20D9FF', background_x_padding: '35%', background_y_padding: '20%', background_border_radius: '30%',
   },
   blackbox: {
-    font_family: 'Arial', font_weight: '700', fill_color: '#FFFFFF',
-    background_color: 'rgba(0,0,0,0.75)', background_x_padding: '18%', background_y_padding: '12%', background_border_radius: '20%',
-    transcript_effect: 'highlight', transcript_color: '#FFD500',
+    font_family: 'Montserrat', font_weight: '800', fill_color: '#FFFFFF',
+    background_color: 'rgba(0,0,0,0.85)', background_x_padding: '30%', background_y_padding: '18%', background_border_radius: '16%',
   },
   'gradient-word': {
-    font_family: 'Arial', font_weight: '800', fill_color: '#4F6BFF',
-    stroke_color: '#000000', stroke_width: '1.4 vmin',
-    transcript_effect: 'karaoke', transcript_color: '#20D9FF',
+    font_family: 'Montserrat', font_weight: '800', fill_color: '#FFFFFF',
+    background_color: '#4F6BFF', background_x_padding: '35%', background_y_padding: '20%', background_border_radius: '30%',
   },
 };
 

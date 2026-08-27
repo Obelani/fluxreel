@@ -20,44 +20,115 @@ function buildSceneImageElements(scenes, imageUrls, totalDuration) {
   });
 }
 
-// Um único elemento de texto cobrindo o vídeo inteiro, usando o recurso
-// nativo de transcript da Creatomate (transcript_source + transcript_effect)
-// — ela anima palavra por palavra sozinha (destaque/karaokê), sincronizada
-// com os timestamps que já temos do Groq. Bem mais bonito e mais simples do
-// que montar dezenas de blocos de texto manualmente.
-function buildCaptionElement(words, style) {
-  const transcriptSource = words.map(function (w) {
-    return { time: w.start, duration: Math.max(w.end - w.start, 0.05), value: w.word };
+// Legenda montada manualmente: 1-2 palavras por vez, em maiúsculas, cada
+// bloco com seu próprio time/duration sincronizado ao timestamp do Groq.
+// width/height ficam null de propósito — assim o elemento (e o fundo tipo
+// "pílula", quando o estilo tem background_color) se ajusta ao tamanho do
+// texto de cada bloco, em vez de esticar numa barra fixa cobrindo a tela.
+function buildCaptionElements(words, style) {
+  const CHUNK_SIZE = 2;
+  const elements = [];
+  for (let i = 0; i < words.length; i += CHUNK_SIZE) {
+    const chunk = words.slice(i, i + CHUNK_SIZE);
+    const text = chunk.map(function (w) { return w.word.toUpperCase(); }).join(' ').trim();
+    if (!text) continue;
+    const start = chunk[0].start;
+    const end = chunk[chunk.length - 1].end;
+
+    const el = {
+      type: 'text',
+      track: 4,
+      time: start,
+      duration: Math.max(end - start, 0.35),
+      text: text,
+      x: '50%',
+      y: '80%',
+      width: null,
+      height: null,
+      x_alignment: '50%',
+      y_alignment: '50%',
+      font_family: style.font_family || 'Arial',
+      font_weight: style.font_weight,
+      font_size: '7.5 vmin',
+      fill_color: style.fill_color,
+    };
+    if (style.stroke_color) {
+      el.stroke_color = style.stroke_color;
+      el.stroke_width = style.stroke_width;
+    }
+    if (style.background_color) {
+      el.background_color = style.background_color;
+      el.background_x_padding = style.background_x_padding;
+      el.background_y_padding = style.background_y_padding;
+      el.background_border_radius = style.background_border_radius;
+    }
+    elements.push(el);
+  }
+  return elements;
+}
+
+// Modo "vitrine" (usado por api/_dev/preview-caption-styles.js): mostra os 5
+// estilos ao mesmo tempo, um embaixo do outro com um rótulo em cima de cada
+// um, pra comparar visualmente sem precisar gerar 5 vídeos separados.
+function buildStylePreviewElements(words, totalDuration) {
+  const sampleText = words.slice(0, 4).map(function (w) { return w.word.toUpperCase(); }).join(' ');
+  const yPositions = ['12%', '28%', '44%', '60%', '76%'];
+  const elements = [];
+  let track = 4;
+
+  Object.keys(CAPTION_STYLES).forEach(function (key, i) {
+    const style = CAPTION_STYLES[key];
+    const y = yPositions[i] || (12 + i * 16) + '%';
+
+    elements.push({
+      type: 'text',
+      track: track++,
+      time: 0,
+      duration: totalDuration,
+      text: key,
+      x: '8%',
+      y: y,
+      width: null,
+      height: null,
+      x_alignment: '0%',
+      y_alignment: '0%',
+      font_family: 'Arial',
+      font_weight: '400',
+      font_size: '2.6 vmin',
+      fill_color: '#AAAAAA',
+    });
+
+    const el = {
+      type: 'text',
+      track: track++,
+      time: 0,
+      duration: totalDuration,
+      text: sampleText,
+      x: '50%',
+      y: y,
+      width: null,
+      height: null,
+      x_alignment: '50%',
+      y_alignment: '100%',
+      font_family: style.font_family,
+      font_weight: style.font_weight,
+      font_size: '4.5 vmin',
+      fill_color: style.fill_color,
+    };
+    if (style.stroke_color) {
+      el.stroke_color = style.stroke_color;
+      el.stroke_width = style.stroke_width;
+    }
+    if (style.background_color) {
+      el.background_color = style.background_color;
+      el.background_x_padding = style.background_x_padding;
+      el.background_y_padding = style.background_y_padding;
+      el.background_border_radius = style.background_border_radius;
+    }
+    elements.push(el);
   });
 
-  const el = {
-    type: 'text',
-    track: 4,
-    y: '78%',
-    width: '85%',
-    height: '30%',
-    x_alignment: '50%',
-    y_alignment: '50%',
-    font_family: style.font_family || 'Arial',
-    font_weight: style.font_weight,
-    font_size: '7 vmin',
-    fill_color: style.fill_color,
-    transcript_effect: style.transcript_effect || 'highlight',
-    transcript_color: style.transcript_color,
-    transcript_maximum_length: 20,
-    transcript_source: transcriptSource,
-  };
-  if (style.stroke_color) {
-    el.stroke_color = style.stroke_color;
-    el.stroke_width = style.stroke_width;
-  }
-  if (style.background_color) {
-    el.background_color = style.background_color;
-    el.background_x_padding = style.background_x_padding;
-    el.background_y_padding = style.background_y_padding;
-    el.background_border_radius = style.background_border_radius;
-  }
-  return el;
+  return elements;
 }
 
 // Etapa 5: monta a composição (imagens + narração + música + legenda) e
@@ -95,8 +166,9 @@ module.exports = async (req, res) => {
     const totalDuration = words[words.length - 1].end;
 
     const imageElements = buildSceneImageElements(video.script.scenes, video.image_urls, totalDuration);
-    const captionStyle = CAPTION_STYLES[video.series.caption_style] || CAPTION_STYLES.classic;
-    const captionElement = buildCaptionElement(words, captionStyle);
+    const captionElements = payload.preview_all_styles
+      ? buildStylePreviewElements(words, totalDuration)
+      : buildCaptionElements(words, CAPTION_STYLES[video.series.caption_style] || CAPTION_STYLES.classic);
 
     const elements = imageElements.concat([{ type: 'audio', track: 2, source: video.audio_url }]);
     if (video.series.music) {
@@ -108,7 +180,7 @@ module.exports = async (req, res) => {
         duration: totalDuration,
       });
     }
-    elements.push(captionElement);
+    elements.push.apply(elements, captionElements);
 
     // O video_id vai na própria URL do webhook (query string) — assim não
     // dependemos de a Creatomate ecoar nenhum campo de metadata específico
@@ -126,6 +198,10 @@ module.exports = async (req, res) => {
           output_format: 'mp4',
           width: 1080,
           height: 1920,
+          fonts: [
+            { family: 'Montserrat', weight: '700', style: 'normal', source: process.env.BASE_URL + '/fonts/Montserrat-Bold.ttf' },
+            { family: 'Montserrat', weight: '900', style: 'normal', source: process.env.BASE_URL + '/fonts/Montserrat-Black.ttf' },
+          ],
           elements: elements,
         },
         webhook_url: webhookUrl,
