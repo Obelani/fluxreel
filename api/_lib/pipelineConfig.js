@@ -39,31 +39,47 @@ const STYLE_PROMPTS = {
 };
 
 // Estilo de legenda escolhido -> estilo do texto queimado no vídeo (Creatomate).
-// Montado manualmente (1-2 palavras por vez, em maiúsculas, com fundo tipo
-// "pílula" que se ajusta ao tamanho do texto) em vez de depender do recurso
-// nativo de transcript da Creatomate — não deu pra confirmar com certeza o
-// comportamento exato dele (fill_color vs transcript_color, largura fixa
-// virando barra em vez de pílula), então preferimos controle total.
+// Espelha exatamente o CSS do preview do wizard (create-series.html, classes
+// .style-*.word.active, por volta da linha 229) — fill_color é a cor da
+// palavra "em repouso" (branco apagado, igual a rgba(255,255,255,0.55) no
+// CSS), transcript_color é a cor/destaque da palavra sendo falada no momento
+// (equivalente ao .word.active de cada estilo).
 const CAPTION_STYLES = {
   classic: {
-    font_family: 'Montserrat', font_weight: '800', fill_color: '#FFFFFF',
-    stroke_color: '#000000', stroke_width: '1.4 vmin',
+    font_family: 'Montserrat', font_weight: '700',
+    fill_color: 'rgba(255,255,255,0.55)',
+    transcript_effect: 'highlight',
+    transcript_color: '#FFFFFF',
+    stroke_color: '#000000', stroke_width: '1.2 vmin',
   },
   'bold-yellow': {
-    font_family: 'Montserrat', font_weight: '900', fill_color: '#000000',
-    background_color: '#FFD500', background_x_padding: '35%', background_y_padding: '20%', background_border_radius: '30%',
+    font_family: 'Montserrat', font_weight: '900',
+    fill_color: 'rgba(255,255,255,0.55)',
+    transcript_effect: 'highlight',
+    transcript_color: '#18181B',
+    background_color: '#FACC15', background_x_padding: '20%', background_y_padding: '10%', background_border_radius: '20%',
   },
   neon: {
-    font_family: 'Montserrat', font_weight: '800', fill_color: '#0A2A33',
-    background_color: '#20D9FF', background_x_padding: '35%', background_y_padding: '20%', background_border_radius: '30%',
+    font_family: 'Montserrat', font_weight: '700',
+    fill_color: 'rgba(255,255,255,0.55)',
+    transcript_effect: 'highlight',
+    transcript_color: '#20D9FF',
   },
   blackbox: {
-    font_family: 'Montserrat', font_weight: '800', fill_color: '#FFFFFF',
-    background_color: 'rgba(0,0,0,0.85)', background_x_padding: '30%', background_y_padding: '18%', background_border_radius: '16%',
+    font_family: 'Montserrat', font_weight: '700',
+    fill_color: 'rgba(255,255,255,0.55)',
+    transcript_effect: 'highlight',
+    transcript_color: '#FFFFFF',
+    background_color: '#000000', background_x_padding: '20%', background_y_padding: '10%', background_border_radius: '10%',
   },
   'gradient-word': {
-    font_family: 'Montserrat', font_weight: '800', fill_color: '#FFFFFF',
-    background_color: '#4F6BFF', background_x_padding: '35%', background_y_padding: '20%', background_border_radius: '30%',
+    // Creatomate provavelmente não suporta texto com gradiente via
+    // propriedade simples — aproximando com a cor cyan da marca (o CSS usa
+    // um gradiente azul->cyan clipado no texto).
+    font_family: 'Montserrat', font_weight: '700',
+    fill_color: 'rgba(255,255,255,0.55)',
+    transcript_effect: 'highlight',
+    transcript_color: '#20D9FF',
   },
 };
 

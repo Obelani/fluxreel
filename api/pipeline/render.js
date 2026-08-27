@@ -20,71 +20,65 @@ function buildSceneImageElements(scenes, imageUrls, totalDuration) {
   });
 }
 
-// Legenda montada manualmente: 1-2 palavras por vez, em maiúsculas, cada
-// bloco com seu próprio time/duration sincronizado ao timestamp do Groq.
-// width/height ficam null de propósito — assim o elemento (e o fundo tipo
-// "pílula", quando o estilo tem background_color) se ajusta ao tamanho do
-// texto de cada bloco, em vez de esticar numa barra fixa cobrindo a tela.
-function buildCaptionElements(words, style) {
-  const CHUNK_SIZE = 2;
-  const elements = [];
-  for (let i = 0; i < words.length; i += CHUNK_SIZE) {
-    const chunk = words.slice(i, i + CHUNK_SIZE);
-    const text = chunk.map(function (w) { return w.word.toUpperCase(); }).join(' ').trim();
-    if (!text) continue;
-    const start = chunk[0].start;
-    const end = chunk[chunk.length - 1].end;
+// Um único elemento de texto cobrindo o vídeo inteiro, usando o recurso
+// nativo de transcript da Creatomate (transcript_source + transcript_effect)
+// — ela anima palavra por palavra sozinha (a que está sendo falada agora
+// ganha transcript_color/background_color, as outras ficam em fill_color,
+// igual ao preview do wizard). width/height ficam null de propósito, pra o
+// elemento se ajustar ao texto em vez de esticar numa barra fixa.
+function buildTranscriptCaptionElement(words, style, opts) {
+  const transcriptSource = words.map(function (w) {
+    return { time: w.start, duration: Math.max(w.end - w.start, 0.05), value: w.word.toUpperCase() };
+  });
 
-    const el = {
-      type: 'text',
-      track: 4,
-      time: start,
-      duration: Math.max(end - start, 0.35),
-      text: text,
-      x: '50%',
-      y: '80%',
-      width: null,
-      height: null,
-      x_alignment: '50%',
-      y_alignment: '50%',
-      font_family: style.font_family || 'Arial',
-      font_weight: style.font_weight,
-      font_size: '7.5 vmin',
-      fill_color: style.fill_color,
-    };
-    if (style.stroke_color) {
-      el.stroke_color = style.stroke_color;
-      el.stroke_width = style.stroke_width;
-    }
-    if (style.background_color) {
-      el.background_color = style.background_color;
-      el.background_x_padding = style.background_x_padding;
-      el.background_y_padding = style.background_y_padding;
-      el.background_border_radius = style.background_border_radius;
-    }
-    elements.push(el);
+  const el = {
+    type: 'text',
+    track: opts.track,
+    x: opts.x || '50%',
+    y: opts.y,
+    width: null,
+    height: null,
+    x_alignment: '50%',
+    y_alignment: opts.y_alignment || '50%',
+    font_family: style.font_family || 'Montserrat',
+    font_weight: style.font_weight,
+    font_size: opts.font_size || '7.5 vmin',
+    fill_color: style.fill_color,
+    transcript_effect: style.transcript_effect || 'highlight',
+    transcript_color: style.transcript_color,
+    transcript_maximum_length: opts.transcript_maximum_length || 24,
+    transcript_source: transcriptSource,
+  };
+  if (style.stroke_color) {
+    el.stroke_color = style.stroke_color;
+    el.stroke_width = style.stroke_width;
   }
-  return elements;
+  if (style.background_color) {
+    el.background_color = style.background_color;
+    el.background_x_padding = style.background_x_padding;
+    el.background_y_padding = style.background_y_padding;
+    el.background_border_radius = style.background_border_radius;
+  }
+  return el;
 }
 
-// Modo "vitrine" (usado por api/_dev/preview-caption-styles.js): mostra os 5
-// estilos ao mesmo tempo, um embaixo do outro com um rótulo em cima de cada
-// um, pra comparar visualmente sem precisar gerar 5 vídeos separados.
-function buildStylePreviewElements(words, totalDuration) {
-  const sampleText = words.slice(0, 4).map(function (w) { return w.word.toUpperCase(); }).join(' ');
+// Modo "vitrine" (usado por api/dev/preview-caption-styles.js): mostra os 5
+// estilos animando ao mesmo tempo, um embaixo do outro com um rótulo em
+// cima de cada um — dá pra ver a legenda de verdade se movendo, não só uma
+// amostra parada, pra comparar todos os estilos num render só.
+function buildStylePreviewElements(words) {
   const yPositions = ['12%', '28%', '44%', '60%', '76%'];
   const elements = [];
   let track = 4;
 
   Object.keys(CAPTION_STYLES).forEach(function (key, i) {
-    const style = CAPTION_STYLES[key];
     const y = yPositions[i] || (12 + i * 16) + '%';
 
     elements.push({
       type: 'text',
       track: track++,
       time: 0,
-      duration: totalDuration,
+      duration: words[words.length - 1].end,
       text: key,
       x: '8%',
       y: y,
@@ -98,34 +92,15 @@ function buildStylePreviewElements(words, totalDuration) {
       fill_color: '#AAAAAA',
     });
 
-    const el = {
-      type: 'text',
-      track: track++,
-      time: 0,
-      duration: totalDuration,
-      text: sampleText,
-      x: '50%',
-      y: y,
-      width: null,
-      height: null,
-      x_alignment: '50%',
-      y_alignment: '100%',
-      font_family: style.font_family,
-      font_weight: style.font_weight,
-      font_size: '4.5 vmin',
-      fill_color: style.fill_color,
-    };
-    if (style.stroke_color) {
-      el.stroke_color = style.stroke_color;
-      el.stroke_width = style.stroke_width;
-    }
-    if (style.background_color) {
-      el.background_color = style.background_color;
-      el.background_x_padding = style.background_x_padding;
-      el.background_y_padding = style.background_y_padding;
-      el.background_border_radius = style.background_border_radius;
-    }
-    elements.push(el);
+    elements.push(
+      buildTranscriptCaptionElement(words, CAPTION_STYLES[key], {
+        track: track++,
+        y: y,
+        y_alignment: '100%',
+        font_size: '4.5 vmin',
+        transcript_maximum_length: 30,
+      })
+    );
   });
 
   return elements;
@@ -167,8 +142,8 @@ module.exports = async (req, res) => {
 
     const imageElements = buildSceneImageElements(video.script.scenes, video.image_urls, totalDuration);
     const captionElements = payload.preview_all_styles
-      ? buildStylePreviewElements(words, totalDuration)
-      : buildCaptionElements(words, CAPTION_STYLES[video.series.caption_style] || CAPTION_STYLES.classic);
+      ? buildStylePreviewElements(words)
+      : [buildTranscriptCaptionElement(words, CAPTION_STYLES[video.series.caption_style] || CAPTION_STYLES.classic, { track: 4, y: '80%' })];
 
     const elements = imageElements.concat([{ type: 'audio', track: 2, source: video.audio_url }]);
     if (video.series.music) {
