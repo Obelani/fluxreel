@@ -97,7 +97,7 @@ module.exports = async (req, res) => {
       elements.push({
         type: 'audio',
         track: 3,
-        source: process.env.PUBLIC_BASE_URL + '/music/' + video.series.music + '.mp3',
+        source: process.env.BASE_URL + '/music/' + video.series.music + '.mp3',
         volume: '15%',
         duration: totalDuration,
       });
@@ -107,7 +107,7 @@ module.exports = async (req, res) => {
     // O video_id vai na própria URL do webhook (query string) — assim não
     // dependemos de a Creatomate ecoar nenhum campo de metadata específico
     // de volta pra sabermos a qual vídeo o callback se refere.
-    const webhookUrl = process.env.PUBLIC_BASE_URL + '/api/pipeline/render-webhook?video_id=' + encodeURIComponent(videoId);
+    const webhookUrl = process.env.BASE_URL + '/api/pipeline/render-webhook?video_id=' + encodeURIComponent(videoId);
 
     const renderRes = await fetch('https://api.creatomate.com/v1/renders', {
       method: 'POST',
