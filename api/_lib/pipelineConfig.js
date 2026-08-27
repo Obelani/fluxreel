@@ -11,6 +11,18 @@ const SCENE_COUNT_BY_DURATION = {
   '60-90': 11,
 };
 
+// Faixa de duração -> orçamento de palavras narradas (somando todas as
+// cenas), pra o áudio final bater com o tempo escolhido no wizard. Baseado
+// em ritmo médio de fala em português (~2.3-2.6 palavras/segundo) — sem
+// isso, o Claude escrevia narração livre e o vídeo saía bem mais longo que
+// o selecionado (ex.: "15-30s" virando 65s de vídeo).
+const WORD_BUDGET_BY_DURATION = {
+  '15-30': [35, 70],
+  '30-40': [70, 100],
+  '40-60': [95, 150],
+  '60-90': [145, 220],
+};
+
 // Nome da voz escolhida no wizard -> voice_id da ElevenLabs.
 const VOICE_IDS = {
   Rafael: 'orF2qy9215xjwqqxqsWW',
@@ -85,4 +97,4 @@ const CAPTION_FONTS = {
   oswald: { label: 'Oswald', fontFamily: 'Oswald', bold: true, files: ['Oswald-Bold.ttf'] },
 };
 
-module.exports = { SCENE_COUNT_BY_DURATION, VOICE_IDS, STYLE_PROMPTS, CAPTION_STYLES, CAPTION_FONTS };
+module.exports = { SCENE_COUNT_BY_DURATION, WORD_BUDGET_BY_DURATION, VOICE_IDS, STYLE_PROMPTS, CAPTION_STYLES, CAPTION_FONTS };

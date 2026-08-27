@@ -2,7 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { getSupabaseAdmin } = require('../_lib/supabaseAdmin');
 const { readVerifiedQstashPayload, markVideoFailed } = require('../_lib/pipelineStage');
 const { publishNextStep } = require('../_lib/qstash');
-const { SCENE_COUNT_BY_DURATION } = require('../_lib/pipelineConfig');
+const { SCENE_COUNT_BY_DURATION, WORD_BUDGET_BY_DURATION } = require('../_lib/pipelineConfig');
 
 // Precisa do corpo bruto pra verificar a assinatura do QStash.
 module.exports.config = { api: { bodyParser: false } };
@@ -39,6 +39,7 @@ module.exports = async (req, res) => {
 
     const series = video.series;
     const sceneCount = SCENE_COUNT_BY_DURATION[series.duration_bucket] || 7;
+    const wordBudget = WORD_BUDGET_BY_DURATION[series.duration_bucket] || [70, 100];
 
     // Outros vídeos já gerados nessa série — evita que o Claude converja
     // sempre pros mesmos temas "óbvios" do nicho quando o prompt é quase
@@ -87,6 +88,7 @@ module.exports = async (req, res) => {
       'A primeira cena precisa ser um gancho forte que prenda a atenção nos primeiros segundos.',
       'As ' + sceneCount + ' cenas juntas formam uma história COMPLETA, com começo, meio e fim — planeje o arco inteiro antes de escrever, distribuindo o desenvolvimento e a conclusão dentro desse número exato de cenas.',
       'A última cena precisa fechar a história com uma conclusão clara (revelação, resolução, virada ou reflexão final) — nunca termine de forma abrupta, incompleta ou como se faltasse continuação.',
+      'MUITO IMPORTANTE: o total de palavras narradas somando TODAS as cenas precisa ficar entre ' + wordBudget[0] + ' e ' + wordBudget[1] + ' palavras — esse é o orçamento pra bater com a duração escolhida do vídeo. Não escreva mais que isso, mesmo que pareça pouco: ajuste o ritmo e a economia de palavras da história pra caber exatamente nesse limite, sem perder o começo-meio-fim.',
     ];
     if (usedTitles.length) {
       promptParts.push(

@@ -7,6 +7,11 @@
 <meta name="description" content="Configure sua série de vídeos virais gerados por IA em poucos passos." />
 <link rel="icon" href="/logo-icon.webp" type="image/webp" />
 <link rel="apple-touch-icon" href="/logo-icon.webp" />
+<!-- Só pra pré-visualizar as fontes de legenda de verdade na etapa 5 —
+     o render final usa os .ttf hospedados em /fonts, não isso aqui. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@700&family=Poppins:wght@700&family=Montserrat:wght@700&display=swap" rel="stylesheet" />
 
 <style>
   :root {
@@ -231,6 +236,18 @@
   .style-neon .word.active { color: var(--brand-cyan); text-shadow: 0 0 10px rgba(32,217,255,0.9); }
   .style-blackbox .word.active { color: #fff; background: #000; box-shadow: 0 0 0 4px #000; }
   .style-gradient-word .word.active { background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* ---------- Etapa 5: amostra das fontes de legenda ---------- */
+  .font-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 560px) { .font-grid { grid-template-columns: repeat(3, 1fr); } }
+  .font-card {
+    border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1);
+    padding: 14px 10px; text-align: center; transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .font-card:hover { background: var(--surface-3); }
+  .font-card.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
+  .font-card .sample { font-size: 22px; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .font-card .label { margin-top: 6px; font-size: 11px; color: var(--text-faint); }
 
   /* ---------- Etapa 6: efeitos ---------- */
   .effects-list { display: flex; flex-direction: column; gap: 12px; }
@@ -495,7 +512,7 @@
       </div>
       <div class="caption-grid" id="caption-grid"></div>
       <p style="font-weight:600; color:#fff; font-size:14px; margin:24px 0 0;">Fonte da legenda</p>
-      <div class="lang-pills" id="font-pills" style="margin-top:10px; margin-bottom:0;"></div>
+      <div class="font-grid" id="font-grid" style="margin-top:10px;"></div>
     </section>
 
     <!-- ===================== ETAPA 6 — EFEITOS ===================== -->
@@ -886,15 +903,18 @@
     });
   });
 
-  var fontPills = document.getElementById('font-pills');
-  fontPills.innerHTML = CAPTION_FONTS.map(function (f) {
-    return '<button type="button" class="lang-pill' + (f[0] === state.captionFont ? ' is-selected' : '') + '" data-font="' + f[0] + '" style="font-family:\'' + f[1] + '\',sans-serif;">' + f[1] + '</button>';
+  var fontGrid = document.getElementById('font-grid');
+  fontGrid.innerHTML = CAPTION_FONTS.map(function (f) {
+    return '<button type="button" class="font-card' + (f[0] === state.captionFont ? ' is-selected' : '') + '" data-font="' + f[0] + '">' +
+      '<div class="sample" style="font-family:\'' + f[1] + '\',sans-serif;">' + f[1] + '</div>' +
+      '<div class="label">Aa Bb Cc</div>' +
+    '</button>';
   }).join('');
-  fontPills.querySelectorAll('.lang-pill').forEach(function (pill) {
-    pill.addEventListener('click', function () {
-      fontPills.querySelectorAll('.lang-pill').forEach(function (p) { p.classList.remove('is-selected'); });
-      pill.classList.add('is-selected');
-      state.captionFont = pill.getAttribute('data-font');
+  fontGrid.querySelectorAll('.font-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      fontGrid.querySelectorAll('.font-card').forEach(function (c) { c.classList.remove('is-selected'); });
+      card.classList.add('is-selected');
+      state.captionFont = card.getAttribute('data-font');
     });
   });
   var captionWordIndex = 0;
