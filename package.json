@@ -5,6 +5,8 @@
   "description": "Backend serverless (Vercel Functions) do FluxReel — pagamento, créditos e geração de vídeos. O site em si continua estático, sem build step.",
   "dependencies": {
     "stripe": "^17.4.0",
-    "@supabase/supabase-js": "^2.45.4"
+    "@supabase/supabase-js": "^2.45.4",
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@upstash/qstash": "^2.7.0"
   }
 }

@@ -606,6 +606,31 @@
   </div>
 </div>
 
+<!-- ===================== MODAL — GERAÇÃO DO VÍDEO ===================== -->
+<div class="modal-overlay" id="generation-overlay" hidden>
+  <div class="modal-card" style="text-align:center;">
+    <div id="generation-progress">
+      <h2 style="margin-bottom:8px;">Gerando seu vídeo…</h2>
+      <p id="generation-status-label" style="color:#a8a8b3; margin-bottom:24px;">Preparando…</p>
+      <div style="width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden;">
+        <div id="generation-progress-bar" style="height:100%; width:8%; background:linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); transition: width 0.4s ease;"></div>
+      </div>
+      <p style="font-size:12px; color:#7d7d88; margin-top:16px;">Isso pode levar alguns minutos — pode fechar essa tela e voltar depois, o vídeo continua sendo gerado.</p>
+    </div>
+    <div id="generation-ready" hidden>
+      <h2 style="margin-bottom:16px;">Seu vídeo está pronto! 🎉</h2>
+      <video id="generation-video-player" controls style="width:100%; max-width:320px; border-radius:12px; margin:0 auto 20px; display:block;"></video>
+      <button type="button" class="btn btn-gradient" id="btn-generation-close" style="width:100%;">Fechar</button>
+    </div>
+    <div id="generation-failed" hidden>
+      <h2 style="margin-bottom:8px;">Não foi possível gerar o vídeo</h2>
+      <p id="generation-error-label" style="color:#a8a8b3; margin-bottom:20px;"></p>
+      <p style="font-size:12px; color:#7d7d88; margin-bottom:20px;">Seu crédito foi devolvido automaticamente.</p>
+      <button type="button" class="btn btn-outline" id="btn-generation-close-error" style="width:100%;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1149,13 +1174,94 @@
     }
   }
 
+  // ===================== GERAÇÃO DO VÍDEO =====================
+  var STATUS_LABELS = {
+    queued: ['Preparando…', 8],
+    script: ['Escrevendo o roteiro…', 20],
+    images: ['Gerando as imagens…', 40],
+    narration: ['Gravando a narração…', 60],
+    captions: ['Sincronizando as legendas…', 75],
+    rendering: ['Montando o vídeo final…', 90],
+    ready: ['Pronto!', 100],
+  };
+
+  function showGenerationProgress(status) {
+    document.getElementById('generation-overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('generation-progress').hidden = false;
+    document.getElementById('generation-ready').hidden = true;
+    document.getElementById('generation-failed').hidden = true;
+    var info = STATUS_LABELS[status] || STATUS_LABELS.queued;
+    document.getElementById('generation-status-label').textContent = info[0];
+    document.getElementById('generation-progress-bar').style.width = info[1] + '%';
+  }
+
+  function showGenerationReady(videoUrl) {
+    document.getElementById('generation-progress').hidden = true;
+    document.getElementById('generation-ready').hidden = false;
+    document.getElementById('generation-failed').hidden = true;
+    var player = document.getElementById('generation-video-player');
+    player.src = videoUrl;
+  }
+
+  function showGenerationFailed(message) {
+    document.getElementById('generation-progress').hidden = true;
+    document.getElementById('generation-ready').hidden = true;
+    document.getElementById('generation-failed').hidden = false;
+    document.getElementById('generation-error-label').textContent = message || 'Tente novamente em instantes.';
+  }
+
+  function closeGenerationOverlay() {
+    document.getElementById('generation-overlay').hidden = true;
+    document.body.style.overflow = '';
+    var player = document.getElementById('generation-video-player');
+    player.pause();
+    player.removeAttribute('src');
+  }
+  document.getElementById('btn-generation-close').addEventListener('click', closeGenerationOverlay);
+  document.getElementById('btn-generation-close-error').addEventListener('click', closeGenerationOverlay);
+
+  // Acompanha a linha de `videos` via Supabase Realtime — nada de polling,
+  // a Vercel avisa a gente via websocket assim que o status mudar.
+  function watchVideo(videoId) {
+    var client = getSupabaseClient();
+    client
+      .channel('video-' + videoId)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'videos', filter: 'id=eq.' + videoId },
+        function (payload) {
+          var video = payload.new;
+          if (video.status === 'ready') {
+            showGenerationReady(video.video_url);
+          } else if (video.status === 'failed') {
+            showGenerationFailed(video.error_message);
+          } else {
+            showGenerationProgress(video.status);
+          }
+        }
+      )
+      .subscribe();
+  }
+
+  async function startVideoGeneration(seriesId) {
+    showGenerationProgress('queued');
+    try {
+      var result = await apiPost('/api/generate-video', { series_id: seriesId });
+      watchVideo(result.video_id);
+    } catch (e) {
+      console.error('[FluxReel] Erro ao iniciar geração do vídeo:', e);
+      showGenerationFailed(e.message);
+    }
+  }
+
   // Volta do Stripe Checkout: ?success=1 (pagamento confirmado) ou ?canceled=1.
-  // A geração do vídeo em si (chamar /api/generate-video e acompanhar o
-  // status) entra na próxima parte do backend.
   (function handleCheckoutReturn() {
     var params = new URLSearchParams(window.location.search);
     if (params.get('success') === '1') {
       showToast('✅ Pagamento confirmado! Seus créditos já foram liberados.');
+      var seriesId = params.get('series_id');
+      if (seriesId) startVideoGeneration(seriesId);
     } else if (params.get('canceled') === '1') {
       showToast('Pagamento cancelado — nada foi cobrado.');
     }
