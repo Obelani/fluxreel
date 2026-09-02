@@ -44,6 +44,7 @@ const STYLE_PROMPTS = {
   disney: 'Disney animated movie style illustration, expressive characters, warm lighting',
   mythology: 'epic mythological painting style, dramatic lighting, classical composition',
   'pixel-art': 'detailed pixel art illustration, retro video game aesthetic',
+  stickmans: 'simple stick figure illustration, minimalist line drawing, stick man characters',
   ghibli: 'Studio Ghibli inspired anime illustration, soft colors, whimsical atmosphere',
   anime: 'anime illustration style, detailed line art, vibrant cel shading',
   painting: 'oil painting style illustration, visible brush strokes, rich textures',
