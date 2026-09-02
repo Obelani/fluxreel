@@ -60,6 +60,18 @@ function getSupabaseClient() {
 // (signInWithOAuth, com redirect) — nunca deixa o usuário sem conseguir
 // logar por causa disso.
 let _googleRedirectPath = null;
+let _googleRawNonce = null;
+
+// O GSI precisa do nonce em SHA-256 hexadecimal, mas o Supabase precisa do
+// nonce original (não hasheado) pra conferir contra o que veio dentro do
+// id_token — sem os dois, signInWithIdToken rejeita com "Passed nonce and
+// nonce in id_token should either both exist or not".
+async function generateNonce() {
+  const raw = btoa(String.fromCharCode.apply(null, crypto.getRandomValues(new Uint8Array(32))));
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+  const hashed = Array.from(new Uint8Array(hashBuffer)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  return { raw: raw, hashed: hashed };
+}
 
 async function handleGoogleCredential(response) {
   const client = getSupabaseClient();
@@ -68,6 +80,7 @@ async function handleGoogleCredential(response) {
   const { error } = await client.auth.signInWithIdToken({
     provider: 'google',
     token: response.credential,
+    nonce: _googleRawNonce,
   });
 
   if (error) {
@@ -104,9 +117,13 @@ async function signInWithGoogle(redirectPath) {
     return;
   }
 
+  const nonce = await generateNonce();
+  _googleRawNonce = nonce.raw;
+
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleGoogleCredential,
+    nonce: nonce.hashed,
   });
   google.accounts.id.prompt(function (notification) {
     var notShown = notification.isNotDisplayed && notification.isNotDisplayed();
