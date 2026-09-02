@@ -9,12 +9,19 @@
 // visual (confirmado na documentação da API) — por isso o "prompt
 // negativo" abaixo é só texto dentro do mesmo prompt, não um parâmetro
 // separado. `seed` é o único desses recursos que a API realmente suporta.
+//
+// Texto em inglês e o ESTILO vem primeiro no prompt final (não por último,
+// como na primeira versão) — um teste real mostrou que estilos como
+// Stickmans e Disney saíam foto realistas quando a instrução de estilo
+// vinha em português e enterrada no meio de um bloco grande de
+// cena/personagem/universo. Modelos de imagem entendem inglês bem melhor,
+// e colocar o estilo logo no início evita que ele seja "diluído".
 
 const { VISUAL_STYLES, DEFAULT_STYLE_ID, getVisualStyle } = require('./visualStyles');
 
 // Bloco fixo, mandado em toda geração sem exceção.
 const UNIVERSAL_NEGATIVE_PROMPT =
-  'EVITAR: mistura de estilos, mudança de técnica artística entre cenas, personagens inconsistentes, alteração de rosto, mudança de idade, mudança de cabelo, mudança de roupas, mudança de acessórios, mudança de proporções, mudança injustificada de paleta, mãos deformadas, dedos extras, membros duplicados, anatomia incorreta, olhos desalinhados, rostos duplicados, objetos flutuando sem motivo, textos, letras, legendas, balões de fala, logotipos, marcas-d\'água, assinaturas, molduras e interfaces de aplicativo.';
+  'AVOID: mixing styles, changing artistic technique between scenes, inconsistent characters, changing face, changing age, changing hair, changing clothes, changing accessories, changing proportions, unjustified palette changes, deformed hands, extra fingers, duplicated limbs, incorrect anatomy, misaligned eyes, duplicated faces, objects floating without reason, text, letters, captions, speech bubbles, logos, watermarks, signatures, frames, app interfaces.';
 
 // `characterBible` é um array de { id, description } — só os personagens
 // PRESENTES na cena atual (filtrados antes de chegar aqui), nunca a lista
@@ -24,34 +31,33 @@ const UNIVERSAL_NEGATIVE_PROMPT =
 // a partir do nome.
 function formatCharacterBible(characterBible) {
   if (!characterBible || !characterBible.length) {
-    return 'Nenhum personagem fixo aparece nesta cena.';
+    return 'No fixed character appears in this scene.';
   }
   return characterBible
     .map(function (c) {
-      var label = (c && (c.id || c.name)) || 'Personagem';
+      var label = (c && (c.id || c.name)) || 'character';
       var description = (c && c.description) || '';
       return '- ' + label + ': ' + description;
     })
     .join('\n');
 }
 
-// Partes 1-4 da estrutura pedida (formato/finalidade, cena, personagens,
-// regras universais de consistência) — texto fixo, só os trechos entre
-// colchetes do original são interpolados.
+// Cena + personagens + universo + regras universais de consistência —
+// tudo, exceto o estilo em si (que vai primeiro, fora dessa função, ver
+// buildImagePrompt) e os blocos negativos (que vão por último).
 function buildConsistencyBlock(opts) {
   var aspectRatio = opts.aspectRatio || '9:16';
-  var aspectLabel = aspectRatio === '9:16' ? 'vertical 9:16' : aspectRatio;
-  var environmentBible = (opts.environmentBible && opts.environmentBible.trim()) || 'Sem descrição fixa de universo definida para este vídeo.';
+  var environmentBible = (opts.environmentBible && opts.environmentBible.trim()) || 'No fixed world/setting description defined for this video.';
 
   return (
-    'Crie uma imagem ' + aspectLabel + ' para uma cena de vídeo.\n' +
-    'Descrição da cena atual:\n' + opts.sceneDescription + '\n' +
-    'Personagens presentes:\n' + formatCharacterBible(opts.characterBible) + '\n' +
-    'Universo e ambientes:\n' + environmentBible + '\n' +
-    'Mantenha consistência visual absoluta com todas as outras cenas do mesmo vídeo. Todos os personagens recorrentes devem conservar exatamente o mesmo rosto, idade, cor de pele, cabelo, penteado, formato dos olhos, proporções corporais, roupas, calçados, acessórios e paleta de cores.\n' +
-    'Mantenha o mesmo período histórico, universo visual, arquitetura, objetos, materiais, iluminação predominante e linguagem artística durante todo o vídeo.\n' +
-    'Apenas a pose, a expressão, o enquadramento e a ação podem mudar conforme a cena. Não redesenhe os personagens e não faça alterações que não tenham sido solicitadas.\n' +
-    'O estilo visual escolhido é obrigatório e deve ocupar toda a imagem. Não misture técnicas ou características de outros estilos.'
+    'Create a ' + aspectRatio + ' vertical image for a video scene.\n' +
+    'Current scene:\n' + opts.sceneDescription + '\n' +
+    'Characters present:\n' + formatCharacterBible(opts.characterBible) + '\n' +
+    'World and setting:\n' + environmentBible + '\n' +
+    'Maintain absolute visual consistency with every other scene in this same video. All recurring characters must keep exactly the same face, age, skin tone, hair color and style, hairstyle, eye shape, body proportions, clothes, shoes, accessories and color palette.\n' +
+    'Keep the same historical period, visual universe, architecture, objects, materials, dominant lighting and artistic language throughout the entire video.\n' +
+    'Only pose, expression, framing and action may change from scene to scene. Do not redesign the characters and do not make any change that was not requested.\n' +
+    'The chosen visual style is mandatory and must fill the entire image. Do not mix techniques or traits from other styles.'
   );
 }
 
@@ -74,10 +80,12 @@ function validateImagePromptInput(opts) {
   return warnings;
 }
 
-// Função central: monta o prompt final de UMA cena, já com os 7 blocos
-// pedidos (formato/cena/personagens -> regras universais -> estilo
-// completo -> negativo universal -> negativo específico do estilo).
-// Nunca resume nem remove nada — cada bloco entra inteiro.
+// Função central: monta o prompt final de UMA cena. Ordem: estilo completo
+// primeiro (parte 5 do pedido original, promovida pra frente por causa da
+// diluição observada em teste real) -> formato/cena/personagens/universo +
+// regras universais de consistência (partes 1-4) -> negativo universal
+// (parte 6) -> negativo específico do estilo (parte 7). Nunca resume nem
+// remove nada — cada bloco entra inteiro.
 function buildImagePrompt(opts) {
   opts = opts || {};
   if (!opts.sceneDescription || !String(opts.sceneDescription).trim()) {
@@ -90,8 +98,8 @@ function buildImagePrompt(opts) {
   }
 
   var blocks = [
+    style.prompt, // parte 5, promovida pro início
     buildConsistencyBlock(opts), // partes 1-4
-    style.prompt, // parte 5
     UNIVERSAL_NEGATIVE_PROMPT, // parte 6
     style.negativeRules, // parte 7
   ];

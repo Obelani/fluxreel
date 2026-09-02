@@ -102,8 +102,8 @@ test('5. O bloco universal de consistência aparece no prompt de toda cena', () 
     environmentBible: sampleEnvironment,
     selectedVisualStyle: 'comic',
   });
-  assert.ok(output.includes('Mantenha consistência visual absoluta com todas as outras cenas do mesmo vídeo.'));
-  assert.ok(output.includes('O estilo visual escolhido é obrigatório e deve ocupar toda a imagem.'));
+  assert.ok(output.includes('Maintain absolute visual consistency with every other scene in this same video.'));
+  assert.ok(output.includes('The chosen visual style is mandatory and must fill the entire image.'));
 });
 
 test('6. O prompt negativo universal aparece no prompt de toda cena', () => {
@@ -151,7 +151,21 @@ test('9. A proporção 9:16 é mantida no bloco de consistência', () => {
     environmentBible: sampleEnvironment,
     selectedVisualStyle: 'fantastic',
   });
-  assert.ok(output.includes('vertical 9:16'));
+  assert.ok(output.includes('9:16 vertical'));
+});
+
+test('13. O prompt do estilo vem no INÍCIO do prompt final, não enterrado no meio (causa do bug real: estilo em português + no fim saía diluído, Stickmans/Disney saindo realistas)', () => {
+  const style = VISUAL_STYLES.stickmans;
+  const output = buildImagePrompt({
+    sceneDescription: 'A long scene description that could otherwise bury the style instruction if it came first.',
+    characterBible: [sampleCharacter],
+    environmentBible: sampleEnvironment,
+    selectedVisualStyle: 'stickmans',
+  });
+  const styleIndex = output.indexOf(style.prompt);
+  const sceneIndex = output.indexOf('Current scene:');
+  assert.ok(styleIndex === 0, 'o prompt do estilo precisa ser o primeiro bloco do prompt final');
+  assert.ok(styleIndex < sceneIndex, 'estilo apareceu depois da descrição da cena');
 });
 
 test('10b. Estilo inválido em buildImagePrompt cai no fallback (não quebra, não escolhe outro estilo silenciosamente)', () => {

@@ -8,6 +8,14 @@
 // salvos pelo wizard (create-series.html, array STYLES) — são os mesmos 14
 // estilos oferecidos lá, sem exceção.
 //
+// Os prompts em si são em INGLÊS (mesma convenção que já existia no
+// projeto antes desse arquivo — modelos de imagem entendem inglês bem
+// melhor que português) e escritos em estilo mais direto/tag-like — um
+// primeiro teste real mostrou que frases longas em português diluíam a
+// instrução de estilo e o resultado saía genérico/realista (ex.: Stickmans
+// e Disney saindo foto realistas). O conteúdo/regras continuam os mesmos
+// definidos originalmente, só a língua e o formato mudaram.
+//
 // Cada estilo tem 3 campos:
 //   - label: nome exibido (não usado no prompt, só documentação/UI)
 //   - prompt: prompt visual completo e positivo do estilo
@@ -23,33 +31,33 @@ const VISUAL_STYLES = {
     id: 'comic',
     label: 'Comic',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: COMIC.\n' +
-      'Produza uma ilustração profissional de história em quadrinhos contemporânea, com contornos pretos firmes, desenho detalhado, anatomia estilizada, sombras dramáticas feitas com tinta, cores sólidas, contraste forte e discretas retículas de impressão.\n' +
-      'A composição deve parecer um painel de graphic novel, com enquadramento cinematográfico, movimento visual, expressões claramente desenhadas e leitura imediata da ação.\n' +
-      'A imagem precisa parecer uma ilustração criada originalmente como história em quadrinhos. Preserve exatamente essa estética em todas as cenas.',
-    negativeRules: 'Não utilize fotografia, pintura, anime, cartoon infantil ou renderização 3D.',
+      'MANDATORY VISUAL STYLE: COMIC BOOK.\n' +
+      'Professional contemporary comic book illustration: bold black outlines, detailed inked linework, stylized anatomy, dramatic ink shading, solid flat colors, strong contrast, subtle halftone dots.\n' +
+      'Graphic novel panel composition, cinematic framing, dynamic motion, clearly drawn expressions, instantly readable action.\n' +
+      'Must look like an illustration originally created as a comic book. Keep this exact aesthetic in every scene.',
+    negativeRules: 'No photography, no painting, no anime, no childish cartoon, no 3D render.',
   },
 
   'creepy-comic': {
     id: 'creepy-comic',
     label: 'Creepy Comic',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: CREEPY COMIC.\n' +
-      'Produza uma ilustração profissional de quadrinhos de terror, com linhas pretas irregulares, sombras profundas, rostos expressivos e levemente perturbadores, ambientes escuros, perspectiva desconfortável e atmosfera constante de suspense.\n' +
-      'Utilize cores dessaturadas, azul-petróleo, cinza, marrom, verde escuro e pequenos detalhes vermelhos. A iluminação deve criar tensão e destacar silhuetas, olhos e elementos importantes.\n' +
-      'A imagem deve parecer um painel de horror graphic novel. O resultado pode ser assustador, mas sem violência gráfica excessiva.',
-    negativeRules: 'Não utilize fotografia, anime, cartoon infantil ou renderização 3D.',
+      'MANDATORY VISUAL STYLE: CREEPY HORROR COMIC.\n' +
+      'Professional horror comic book illustration: irregular black linework, deep shadows, expressive slightly unsettling faces, dark environments, uncomfortable perspective, constant suspenseful atmosphere.\n' +
+      'Desaturated colors, teal, gray, brown, dark green, small red accents. Lighting builds tension and highlights silhouettes, eyes and key elements.\n' +
+      'Must look like a horror graphic novel panel. Can be scary, but without excessive graphic violence.',
+    negativeRules: 'No photography, no anime, no childish cartoon, no 3D render.',
   },
 
   'modern-cartoon': {
     id: 'modern-cartoon',
     label: 'Modern Cartoon',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: MODERN CARTOON.\n' +
-      'Produza uma ilustração digital 2D contemporânea, com contornos limpos e expressivos, formas simplificadas, cores vibrantes, sombreamento cel shading suave e personagens com proporções levemente estilizadas.\n' +
-      'Utilize cenários bem desenhados, expressões marcantes e acabamento de série animada moderna. As linhas devem ser uniformes e as cores visualmente organizadas.\n' +
-      'Preserve o mesmo design dos personagens em todas as cenas.',
-    negativeRules: 'Não utilize textura de pintura, realismo fotográfico, estética de anime, aparência infantil excessiva ou renderização 3D.',
+      'MANDATORY VISUAL STYLE: MODERN CARTOON.\n' +
+      'Contemporary 2D digital illustration: clean expressive outlines, simplified shapes, vibrant colors, soft cel shading, slightly stylized character proportions.\n' +
+      'Well-designed backgrounds, strong expressions, modern animated-series finish. Uniform linework, visually organized colors.\n' +
+      'Keep the exact same character design in every scene.',
+    negativeRules: 'No painterly texture, no photorealism, no anime aesthetic, no excessively childish look, no 3D render.',
   },
 
   // Nome "Disney" continua na interface, mas o prompt real é neutro (não
@@ -58,40 +66,40 @@ const VISUAL_STYLES = {
     id: 'disney',
     label: 'Disney',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: ANIMAÇÃO 3D FAMILIAR CINEMATOGRÁFICA.\n' +
-      'Produza uma cena com aparência de longa-metragem de animação 3D familiar, com personagens expressivos, olhos grandes e naturais, formas arredondadas, anatomia estilizada, materiais suaves, cabelos bem definidos, iluminação cinematográfica e cenários ricos em profundidade.\n' +
-      'A imagem deve transmitir emoção, carisma e acabamento premium de cinema de animação. Utilize cores agradáveis, composição cinematográfica e expressões faciais de fácil compreensão.',
-    negativeRules: 'Não utilize fotografia, anime, desenho 2D, aparência de brinquedo plástico ou anatomia excessivamente realista.',
+      'MANDATORY VISUAL STYLE: CINEMATIC FAMILY 3D ANIMATION.\n' +
+      'High-end animated feature film look: expressive characters, large natural eyes, rounded shapes, stylized anatomy, soft materials, well-defined hair, cinematic lighting, backgrounds rich in depth.\n' +
+      'Must convey emotion, charm and premium animated-movie finish. Pleasant colors, cinematic composition, easily readable facial expressions.',
+    negativeRules: 'No photography, no anime, no flat 2D drawing, no plastic toy look, no overly realistic human anatomy.',
   },
 
   mythology: {
     id: 'mythology',
     label: 'Mythology',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: MYTHOLOGY.\n' +
-      'Produza uma ilustração épica inspirada em mitologias antigas, com deuses, heróis, guerreiros, templos monumentais, armaduras ornamentadas, tecidos nobres, esculturas, raios, fogo, névoa divina e símbolos mitológicos.\n' +
-      'Utilize composição heroica, proporções majestosas, iluminação celestial, atmosfera sobrenatural e alto nível de detalhes. A estética deve combinar pintura digital épica e iconografia clássica.',
-    negativeRules: 'Não utilize objetos modernos, cartoon infantil, fotografia cotidiana, ficção científica ou roupas incompatíveis com o universo mitológico da cena.',
+      'MANDATORY VISUAL STYLE: MYTHOLOGY.\n' +
+      'Epic illustration inspired by ancient mythology: gods, heroes, warriors, monumental temples, ornate armor, noble fabrics, sculptures, lightning, fire, divine mist, mythological symbols.\n' +
+      'Heroic composition, majestic proportions, celestial lighting, supernatural atmosphere, highly detailed. Combine epic digital painting with classical iconography.',
+    negativeRules: 'No modern objects, no childish cartoon, no everyday photography, no science fiction, no clothing incompatible with the mythological setting.',
   },
 
   'pixel-art': {
     id: 'pixel-art',
     label: 'Pixel Art',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: PIXEL ART.\n' +
-      'Produza uma autêntica ilustração pixel art de RPG 16-bit, com pixels quadrados claramente visíveis, bordas rígidas, sprites detalhados, paleta limitada, sombreamento construído com blocos de cor e iluminação pixelizada.\n' +
-      'Todos os elementos da imagem, incluindo personagens, rostos, roupas, objetos, céu, partículas e cenários, devem ser construídos integralmente em pixel art. A imagem deve parecer criada manualmente pixel por pixel.',
-    negativeRules: 'Não utilize linhas suaves, pintura digital, vetores, fotografia, desfoque, anti-aliasing ou filtros que apenas simulem pixels.',
+      'MANDATORY VISUAL STYLE: PIXEL ART.\n' +
+      'Authentic 16-bit RPG pixel art: clearly visible square pixels, hard edges, detailed sprites, limited color palette, block-based shading, pixelated lighting.\n' +
+      'Every element — characters, faces, clothes, objects, sky, particles, backgrounds — must be built entirely in pixel art. Must look hand-crafted pixel by pixel.',
+    negativeRules: 'No smooth lines, no digital painting, no vector art, no photography, no blur, no anti-aliasing, no filters that only simulate pixels.',
   },
 
   stickmans: {
     id: 'stickmans',
     label: 'Stickmans',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: STICKMAN.\n' +
-      'Produza uma ilustração minimalista com personagens formados por cabeças circulares e corpos construídos com linhas simples. As poses devem ser muito claras, expressivas e dinâmicas, comunicando perfeitamente a ação da cena.\n' +
-      'Utilize fundo claro semelhante a papel, traços pretos desenhados à mão, poucas linhas de cenário, efeitos de movimento e pequenos detalhes em vermelho, amarelo ou azul. Todos os personagens devem permanecer reconhecíveis por acessórios simples e cores identificadoras.',
-    negativeRules: 'Não desenhe anatomia humana realista, rostos detalhados, roupas complexas, personagens tridimensionais ou corpos volumosos.',
+      'MANDATORY VISUAL STYLE: STICK FIGURE (STICKMAN).\n' +
+      'Minimalist illustration: characters made of a circular head and simple line-drawn limbs and body. Poses must be extremely clear, expressive and dynamic, instantly communicating the scene\'s action.\n' +
+      'Plain paper-like light background, hand-drawn black strokes, minimal background lines, motion lines, small accent details in red, yellow or blue. Characters stay recognizable only through simple accessories and identifying colors.',
+    negativeRules: 'No realistic human anatomy, no detailed faces, no complex clothing, no three-dimensional characters, no bulky/voluminous bodies.',
   },
 
   // Nome "Ghibli" continua na interface, mas o prompt real é neutro —
@@ -100,40 +108,40 @@ const VISUAL_STYLES = {
     id: 'ghibli',
     label: 'Ghibli',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: ANIMAÇÃO JAPONESA ARTESANAL E ACOLHEDORA.\n' +
-      'Produza uma ilustração 2D desenhada à mão, com fundos delicadamente pintados em aquarela, natureza exuberante, cores suaves, luz natural, atmosfera contemplativa e personagens com expressões gentis.\n' +
-      'Utilize texturas orgânicas, cenários detalhados, pequenas imperfeições artesanais e sensação de encantamento cotidiano. A imagem deve parecer um frame tradicional de animação japonesa clássica.',
-    negativeRules: 'Não utilize renderização 3D, realismo fotográfico, neon intenso, contornos agressivos ou estética sombria excessiva.',
+      'MANDATORY VISUAL STYLE: HANDCRAFTED, WARM JAPANESE-STYLE ANIMATION.\n' +
+      'Hand-drawn 2D illustration: delicately watercolor-painted backgrounds, lush nature, soft colors, natural light, contemplative atmosphere, gently expressive characters.\n' +
+      'Organic textures, detailed scenery, small handcrafted imperfections, everyday sense of wonder. Must look like a classic hand-drawn Japanese animation frame.',
+    negativeRules: 'No 3D render, no photorealism, no intense neon, no harsh outlines, no excessively dark aesthetic.',
   },
 
   anime: {
     id: 'anime',
     label: 'Anime',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: ANIME.\n' +
-      'Produza uma cena de anime 2D de alta qualidade, com linhas limpas, olhos expressivos, cabelos desenhados em mechas definidas, anatomia estilizada, cel shading, luz dramática e composição cinematográfica.\n' +
-      'Utilize fundos detalhados, expressões intensas e ângulos de câmera dinâmicos. Preserve exatamente o design, as roupas e as cores dos personagens em todas as cenas.',
-    negativeRules: 'Não utilize fotografia, renderização 3D, cartoon ocidental, pintura realista, aquarela infantil ou proporções chibi, salvo quando isso for solicitado explicitamente.',
+      'MANDATORY VISUAL STYLE: ANIME.\n' +
+      'High-quality 2D anime scene: clean lines, expressive eyes, hair drawn in defined strands, stylized anatomy, cel shading, dramatic lighting, cinematic composition.\n' +
+      'Detailed backgrounds, intense expressions, dynamic camera angles. Keep the exact same character design, clothes and colors in every scene.',
+    negativeRules: 'No photography, no 3D render, no western cartoon, no realistic painting, no childish watercolor, no chibi proportions unless explicitly requested.',
   },
 
   painting: {
     id: 'painting',
     label: 'Painting',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: PAINTING.\n' +
-      'Produza uma pintura digital com aparência de óleo sobre tela, pinceladas visíveis, mistura natural de cores, textura artística, iluminação clássica e profundidade atmosférica.\n' +
-      'Rostos, roupas, objetos e cenários devem apresentar detalhes pintados manualmente, sem acabamento fotográfico perfeito. A composição deve parecer uma pintura narrativa profissional.',
-    negativeRules: 'Não utilize contornos de quadrinhos, cel shading, pixel art, renderização 3D, vetores ou aparência de fotografia tratada apenas com um filtro.',
+      'MANDATORY VISUAL STYLE: PAINTING.\n' +
+      'Digital painting with an oil-on-canvas look: visible brushstrokes, natural color blending, artistic texture, classical lighting, atmospheric depth.\n' +
+      'Faces, clothes, objects and backgrounds must show hand-painted detail, not a flawless photographic finish. Composition should look like a professional narrative painting.',
+    negativeRules: 'No comic-book outlines, no cel shading, no pixel art, no 3D render, no vector art, no photo with just a filter applied.',
   },
 
   'dark-fantasy': {
     id: 'dark-fantasy',
     label: 'Dark Fantasy',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: DARK FANTASY.\n' +
-      'Produza uma ilustração cinematográfica de fantasia sombria, com ruínas góticas, florestas mortas, armaduras desgastadas, névoa, criaturas ameaçadoras, magia obscura e iluminação dramática de baixo contraste.\n' +
-      'Utilize preto, cinza, azul profundo, marrom e pequenos detalhes vermelhos ou violetas. A atmosfera deve ser opressiva, misteriosa e épica, com realismo fantástico detalhado.',
-    negativeRules: 'Não utilize cartoon, cores excessivamente alegres, estética infantil, anime brilhante ou violência gráfica excessiva.',
+      'MANDATORY VISUAL STYLE: DARK FANTASY.\n' +
+      'Cinematic dark fantasy illustration: gothic ruins, dead forests, worn armor, mist, threatening creatures, dark magic, dramatic low-contrast lighting.\n' +
+      'Black, gray, deep blue, brown, small red or violet accents. Atmosphere must be oppressive, mysterious and epic, with detailed fantastical realism.',
+    negativeRules: 'No cartoon, no excessively cheerful colors, no childish aesthetic, no bright anime, no excessive graphic violence.',
   },
 
   // Nome "Lego" continua na interface, mas o prompt real é neutro —
@@ -142,30 +150,30 @@ const VISUAL_STYLES = {
     id: 'lego',
     label: 'Lego',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: BRINQUEDOS DE BLOCOS PLÁSTICOS.\n' +
-      'Reconstrua toda a cena como uma maquete feita com blocos plásticos de encaixe. Os personagens devem possuir formato de minifiguras, mãos em formato de gancho, pernas articuladas, rostos impressos e acessórios construídos com pequenas peças.\n' +
-      'Utilize plástico brilhante, encaixes visíveis, iluminação de fotografia macro e profundidade de campo de miniatura. Todos os ambientes, veículos, objetos e efeitos devem ser construídos com blocos.',
-    negativeRules: 'Não misture pessoas reais, anatomia humana, pintura, massinha ou outros tipos de brinquedo.',
+      'MANDATORY VISUAL STYLE: PLASTIC BRICK TOY DIORAMA.\n' +
+      'Rebuild the entire scene as a diorama made of interlocking plastic bricks. Characters must have minifigure proportions, hook-shaped hands, articulated legs, printed faces, and accessories built from small pieces.\n' +
+      'Glossy plastic, visible studs/connectors, macro-photography-style lighting, miniature depth of field. Every environment, vehicle, object and effect must be built out of bricks.',
+    negativeRules: 'No real people, no human anatomy, no painting, no clay/playdough, no other toy types mixed in.',
   },
 
   realism: {
     id: 'realism',
     label: 'Realism',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: REALISM.\n' +
-      'Produza uma imagem fotográfica extremamente realista, com anatomia humana correta, pele natural, poros discretos, cabelos individuais, tecidos convincentes, materiais fisicamente precisos e iluminação cinematográfica plausível.\n' +
-      'Utilize enquadramento de câmera profissional, profundidade de campo natural, perspectiva correta e cores equilibradas. A cena deve parecer registrada no mundo real.',
-    negativeRules: 'Não utilize aparência de desenho, anime, cartoon, pintura, pele plástica, excesso de nitidez, anatomia deformada ou aparência artificial de imagem gerada por inteligência artificial.',
+      'MANDATORY VISUAL STYLE: REALISM.\n' +
+      'Extremely realistic photographic image: correct human anatomy, natural skin, subtle pores, individual hair strands, convincing fabrics, physically accurate materials, plausible cinematic lighting.\n' +
+      'Professional camera framing, natural depth of field, correct perspective, balanced colors. The scene must look like it was captured in the real world.',
+    negativeRules: 'No drawn/illustrated look, no anime, no cartoon, no painting, no plastic-looking skin, no over-sharpening, no deformed anatomy, no artificial AI-generated look.',
   },
 
   fantastic: {
     id: 'fantastic',
     label: 'Fantastic',
     prompt:
-      'ESTILO VISUAL OBRIGATÓRIO: FANTASTIC.\n' +
-      'Produza uma cena de fantasia luminosa e espetacular, com paisagens grandiosas, cidades impossíveis, ruínas mágicas, criaturas fantásticas, feixes de luz, partículas brilhantes e cores intensas.\n' +
-      'Utilize escala monumental, profundidade cinematográfica e sensação constante de descoberta. A estética deve ser de concept art fantástico premium, detalhado e visualmente deslumbrante.',
-    negativeRules: 'Não utilize terror sombrio predominante, cenário cotidiano, cartoon infantil, fotografia comum ou elementos sem relação com o universo fantástico.',
+      'MANDATORY VISUAL STYLE: FANTASTIC.\n' +
+      'Luminous, spectacular fantasy scene: grand landscapes, impossible cities, magical ruins, fantastical creatures, light beams, glowing particles, intense colors.\n' +
+      'Monumental scale, cinematic depth, constant sense of discovery. Aesthetic should read as premium, detailed, visually stunning fantasy concept art.',
+    negativeRules: 'No predominantly dark horror, no everyday setting, no childish cartoon, no ordinary photography, no elements unrelated to the fantastical universe.',
   },
 };
 
