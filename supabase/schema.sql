@@ -56,6 +56,7 @@ create table if not exists public.videos (
   user_id uuid not null references auth.users(id) on delete cascade,
   series_id uuid not null references public.series(id) on delete cascade,
   status text not null default 'queued',
+  custom_prompt text,
   script jsonb,
   image_urls jsonb,
   audio_url text,

@@ -172,6 +172,14 @@
   .modal-card.paywall-card > p { margin-top: 6px; font-size: 14px; color: var(--text-muted); max-width: 560px; }
   .modal-close { position: absolute; right: 20px; top: 20px; background: none; border: none; color: var(--text-faint); font-size: 18px; }
   .modal-close:hover { color: #fff; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-size: 13px; font-weight: 500; color: #c7c7ce; }
+  .field textarea {
+    border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1);
+    color: var(--text-primary); padding: 12px 14px; font-size: 14px; outline: none; width: 100%;
+    font-family: inherit; line-height: 1.5; resize: vertical; min-height: 120px; transition: border-color 0.2s ease;
+  }
+  .field textarea:focus { border-color: var(--brand-blue); }
   .modal-grid { margin-top: 24px; display: grid; gap: 32px; }
   @media (min-width: 900px) { .modal-grid { grid-template-columns: 1fr 300px; } }
 
@@ -464,6 +472,29 @@
   </div>
 </div>
 
+<!-- ===================== MODAL — GERAR VÍDEO (tema opcional) ===================== -->
+<div class="modal-overlay" id="generate-modal-overlay" hidden>
+  <div class="modal-card" style="max-width:420px; text-align:left;">
+    <button type="button" class="modal-close" id="generate-modal-close" aria-label="Fechar">✕</button>
+    <h2 style="margin-bottom:8px; padding-right:24px;">Gerar novo vídeo</h2>
+    <p style="color:var(--text-muted); font-size:14px; margin-bottom:16px;">Quer um tema específico só pra esse vídeo? Se deixar em branco, a IA escolhe um tema dentro do nicho da série.</p>
+    <div class="field">
+      <label for="generate-custom-prompt">Tema específico (opcional)</label>
+      <textarea id="generate-custom-prompt" rows="5" placeholder="Ex: Fale sobre a lenda do Curupira"></textarea>
+    </div>
+    <button type="button" class="btn btn-gradient" id="generate-modal-confirm" style="width:100%; margin-top:16px;">Gerar vídeo</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL — VER PROMPT COMPLETO ===================== -->
+<div class="modal-overlay" id="prompt-view-overlay" hidden>
+  <div class="modal-card" style="max-width:480px; text-align:left;">
+    <button type="button" class="modal-close" id="prompt-view-close" aria-label="Fechar">✕</button>
+    <h2 id="prompt-view-title" style="margin-bottom:14px; padding-right:24px;">Prompt</h2>
+    <div id="prompt-view-text" style="max-height:320px; overflow-y:auto; font-size:14px; line-height:1.6; color:var(--text-muted); white-space:pre-wrap;"></div>
+  </div>
+</div>
+
 <!-- ===================== MODAL — CONFIRMAÇÃO ===================== -->
 <div class="modal-overlay" id="confirm-overlay" hidden>
   <div class="modal-card" style="max-width:360px; text-align:center;">
@@ -548,6 +579,47 @@
       overlay.addEventListener('click', onOverlayClick);
     });
   }
+
+  // Modal "Gerar novo vídeo": pergunta um tema específico opcional antes de
+  // disparar a geração — em vez de já sair gerando direto ao clicar.
+  var generateModalSeriesId = null;
+  function openGenerateModal(seriesId) {
+    generateModalSeriesId = seriesId;
+    document.getElementById('generate-custom-prompt').value = '';
+    document.getElementById('generate-modal-overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeGenerateModal() {
+    document.getElementById('generate-modal-overlay').hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.getElementById('generate-modal-close').addEventListener('click', closeGenerateModal);
+  document.getElementById('generate-modal-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closeGenerateModal();
+  });
+  document.getElementById('generate-modal-confirm').addEventListener('click', function () {
+    var customPrompt = document.getElementById('generate-custom-prompt').value.trim();
+    var seriesId = generateModalSeriesId;
+    closeGenerateModal();
+    if (seriesId) startVideoGeneration(seriesId, customPrompt || null);
+  });
+
+  // Modal "Ver prompt completo" — pro texto de nicho/tema personalizado que
+  // não cabe inteiro no card do vídeo.
+  function openPromptView(title, text) {
+    document.getElementById('prompt-view-title').textContent = title || 'Prompt';
+    document.getElementById('prompt-view-text').textContent = text;
+    document.getElementById('prompt-view-overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closePromptView() {
+    document.getElementById('prompt-view-overlay').hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.getElementById('prompt-view-close').addEventListener('click', closePromptView);
+  document.getElementById('prompt-view-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closePromptView();
+  });
 
   async function apiPost(path, body) {
     var res = await fetch(path, {
@@ -679,7 +751,7 @@
         '</div>';
     }).join('');
     grid.querySelectorAll('[data-generate]').forEach(function (btn) {
-      btn.addEventListener('click', function () { startVideoGeneration(btn.getAttribute('data-generate')); });
+      btn.addEventListener('click', function () { openGenerateModal(btn.getAttribute('data-generate')); });
     });
     grid.querySelectorAll('[data-ver-videos]').forEach(function (btn) {
       btn.addEventListener('click', function () { openSeriesVideos(btn.getAttribute('data-ver-videos')); });
@@ -737,10 +809,26 @@
     return (v.script && v.script.title) || seriesNameFor(v.series_id);
   }
 
-  function videoMeta(v) {
+  // O "tema" de um vídeo agora pode ser um texto livre bem mais longo que
+  // um nicho curto (Personalizado no wizard, ou tema específico digitado no
+  // modal de "Gerar vídeo") — truncamos no card e oferecemos "Ver prompt
+  // completo" em vez de deixar o texto quebrar o layout.
+  function videoPromptText(v) {
     var series = seriesFor(v.series_id);
+    return (v.custom_prompt && v.custom_prompt.trim()) || (series && series.niche) || '';
+  }
+
+  function truncateText(text, max) {
+    if (!text) return '';
+    return text.length > max ? text.slice(0, max).trim() + '…' : text;
+  }
+
+  var META_PROMPT_MAX = 40;
+
+  function videoMeta(v) {
     var parts = [];
-    if (series) parts.push(capitalize(series.niche));
+    var prompt = videoPromptText(v);
+    if (prompt) parts.push(capitalize(truncateText(prompt, META_PROMPT_MAX)));
     var duration = videoDurationLabel(v);
     if (duration) parts.push(duration);
     return parts.join(' · ');
@@ -784,6 +872,10 @@
       } else if (v.status === 'failed') {
         footer = '<button type="button" class="btn btn-outline btn-sm" data-retry="' + v.series_id + '">Gerar de novo</button>';
       }
+      var promptFull = videoPromptText(v);
+      var promptLink = promptFull.length > META_PROMPT_MAX
+        ? '<button type="button" data-view-prompt="' + v.id + '" style="background:none; border:none; padding:0; margin:-4px 0 4px; font-size:11px; font-weight:600; color:var(--brand-cyan); text-align:left;">Ver prompt completo</button>'
+        : '';
       return '' +
         '<div class="video-card">' +
           '<div class="card-head">' +
@@ -796,6 +888,7 @@
             '</div>' +
           '</div>' +
           '<div class="meta">' + videoMeta(v) + '</div>' +
+          promptLink +
           preview +
           footer +
         '</div>';
@@ -810,6 +903,12 @@
     });
     list.querySelectorAll('[data-delete-video]').forEach(function (btn) {
       btn.addEventListener('click', function () { deleteVideo(btn.getAttribute('data-delete-video')); });
+    });
+    list.querySelectorAll('[data-view-prompt]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var v = rows.filter(function (x) { return x.id === btn.getAttribute('data-view-prompt'); })[0];
+        if (v) openPromptView(videoTitle(v), videoPromptText(v));
+      });
     });
   }
 
@@ -1101,10 +1200,12 @@
       .subscribe();
   }
 
-  async function startVideoGeneration(seriesId) {
+  async function startVideoGeneration(seriesId, customPrompt) {
     showGenerationProgress('queued');
     try {
-      var result = await apiPost('/api/generate-video', { series_id: seriesId });
+      var body = { series_id: seriesId };
+      if (customPrompt) body.custom_prompt = customPrompt;
+      var result = await apiPost('/api/generate-video', body);
       watchVideo(result.video_id);
     } catch (e) {
       console.error('[FluxReel] Erro ao iniciar geração do vídeo:', e);

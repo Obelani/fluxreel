@@ -25,6 +25,9 @@ module.exports = async (req, res) => {
       res.status(400).json({ error: 'series_id obrigatório' });
       return;
     }
+    // Tema específico só pra esse vídeo (opcional) — sobrepõe o nicho da
+    // série apenas na geração do roteiro dele, sem alterar a série.
+    const customPrompt = typeof req.body.custom_prompt === 'string' ? req.body.custom_prompt.trim().slice(0, 2000) : null;
 
     const supabase = getSupabaseAdmin();
 
@@ -52,7 +55,7 @@ module.exports = async (req, res) => {
     try {
       const { data: video, error: videoError } = await supabase
         .from('videos')
-        .insert({ user_id: user.id, series_id: seriesId, status: 'queued' })
+        .insert({ user_id: user.id, series_id: seriesId, status: 'queued', custom_prompt: customPrompt || null })
         .select('id')
         .single();
       if (videoError) throw videoError;
