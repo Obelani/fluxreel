@@ -35,24 +35,9 @@ const VOICE_IDS = {
   Leo: 'QyWUOLLpCqeUq1ZnuAup',
 };
 
-// Estilo visual escolhido -> sufixo de prompt (em inglês, os modelos de
-// imagem respondem melhor) pra geração de cada cena.
-const STYLE_PROMPTS = {
-  comic: 'comic book style illustration, bold outlines, vibrant colors',
-  'creepy-comic': 'creepy horror comic book illustration, dark inking, unsettling atmosphere',
-  'modern-cartoon': 'modern flat cartoon illustration, clean shapes, bright colors',
-  disney: 'Disney animated movie style illustration, expressive characters, warm lighting',
-  mythology: 'epic mythological painting style, dramatic lighting, classical composition',
-  'pixel-art': 'detailed pixel art illustration, retro video game aesthetic',
-  stickmans: 'simple stick figure illustration, minimalist line drawing, stick man characters',
-  ghibli: 'Studio Ghibli inspired anime illustration, soft colors, whimsical atmosphere',
-  anime: 'anime illustration style, detailed line art, vibrant cel shading',
-  painting: 'oil painting style illustration, visible brush strokes, rich textures',
-  'dark-fantasy': 'dark fantasy digital painting, moody atmosphere, dramatic shadows',
-  lego: 'LEGO brick style 3D render, toy-like aesthetic, bright colors',
-  realism: 'photorealistic digital illustration, cinematic lighting, high detail',
-  fantastic: 'fantasy art illustration, magical atmosphere, vivid colors',
-};
+// Estilo visual escolhido -> ver api/_lib/visualStyles.js (catálogo
+// centralizado dos 14 estilos, com prompt completo + regras negativas por
+// estilo). Saiu daqui pra não duplicar/espalhar os prompts de imagem.
 
 // Estilo de legenda escolhido -> cores do texto queimado no vídeo (via
 // arquivo .ass, ver api/pipeline/render.js). Espelha o CSS do preview do
@@ -101,4 +86,4 @@ const CAPTION_FONTS = {
   oswald: { label: 'Oswald', fontFamily: 'Oswald', bold: true, files: ['Oswald-Bold.ttf'] },
 };
 
-module.exports = { SCENE_COUNT_BY_DURATION, WORD_BUDGET_BY_DURATION, VOICE_IDS, STYLE_PROMPTS, CAPTION_STYLES, CAPTION_FONTS };
+module.exports = { SCENE_COUNT_BY_DURATION, WORD_BUDGET_BY_DURATION, VOICE_IDS, CAPTION_STYLES, CAPTION_FONTS };

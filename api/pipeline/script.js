@@ -58,11 +58,30 @@ module.exports = async (req, res) => {
 
     const scriptTool = {
       name: 'roteiro_video',
-      description: 'Roteiro de um vídeo curto para redes sociais, dividido em cenas.',
+      description: 'Roteiro de um vídeo curto para redes sociais, dividido em cenas, com ficha visual fixa de personagens e universo para manter consistência entre as imagens de cada cena.',
       input_schema: {
         type: 'object',
         properties: {
           title: { type: 'string', description: 'Título curto e chamativo do vídeo, em português.' },
+          environment: {
+            type: 'string',
+            description: 'Descrição FIXA do universo/ambiente da história, em inglês, para o gerador de imagens: época/período, arquitetura, clima, objetos recorrentes, iluminação predominante. Essa mesma descrição é reaproveitada literalmente em todas as cenas — pense nela antes de escrever as cenas, não depois.',
+          },
+          characters: {
+            type: 'array',
+            description: 'Ficha visual fixa de cada personagem recorrente da história (pode ser vazio se não houver nenhum personagem fixo, ex.: vídeo de curiosidades sem protagonista). Gerada UMA VEZ aqui — nunca é reconstruída cena a cena.',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Identificador curto do personagem (ex.: "hero", "old_fisherman"), usado pra referenciá-lo em cada cena.' },
+                description: {
+                  type: 'string',
+                  description: 'Ficha visual completa, em inglês, para o gerador de imagens: sexo/apresentação, idade aparente, origem/espécie, formato do rosto, cor da pele, cor dos olhos, cor e formato do cabelo, altura e constituição corporal, roupa completa, calçados, acessórios, características únicas, paleta de cores — adaptada ao estilo visual escolhido.',
+                },
+              },
+              required: ['id', 'description'],
+            },
+          },
           scenes: {
             type: 'array',
             items: {
@@ -74,13 +93,18 @@ module.exports = async (req, res) => {
                   description: 'Papel dessa cena na história: "gancho" (só a 1ª cena), "desenvolvimento" (cenas do meio) ou "conclusao" (só a(s) última(s) cena(s) — precisa fechar a história de vez).',
                 },
                 narration: { type: 'string', description: 'Texto narrado nessa cena, em português do Brasil, 1 a 3 frases. Na(s) cena(s) com role="conclusao", use um tom perceptivelmente mais pausado/reflexivo/conclusivo (frase mais curta, pontuação que sinalize fechamento) — diferente do ritmo do resto do vídeo.' },
-                visual: { type: 'string', description: 'Descrição visual da cena, em inglês, para um gerador de imagem por IA.' },
+                visual: { type: 'string', description: 'Descrição em inglês do que ACONTECE nessa cena especificamente (ação, pose, expressão, enquadramento) — não repita a ficha visual dos personagens nem a descrição do universo aqui, isso já vem de "characters" e "environment".' },
+                charactersInScene: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'IDs (do array "characters" acima) dos personagens presentes nessa cena especificamente. Array vazio se nenhum personagem fixo aparecer nela.',
+                },
               },
-              required: ['role', 'narration', 'visual'],
+              required: ['role', 'narration', 'visual', 'charactersInScene'],
             },
           },
         },
-        required: ['title', 'scenes'],
+        required: ['title', 'environment', 'characters', 'scenes'],
       },
     };
 
@@ -103,6 +127,7 @@ module.exports = async (req, res) => {
       'As ' + sceneCount + ' cenas juntas formam uma história COMPLETA, com começo, meio e fim — planeje o arco inteiro antes de escrever, distribuindo o desenvolvimento e a conclusão dentro desse número exato de cenas.',
       'A última cena precisa fechar a história com uma conclusão clara (revelação, resolução, virada ou reflexão final) — nunca termine de forma abrupta, incompleta ou como se faltasse continuação.',
       'Marque o papel de cada cena no campo "role" (gancho/desenvolvimento/conclusao) — pense no arco completo ANTES de escrever a narração de cada uma. A narração da(s) cena(s) de conclusão precisa soar diferente do resto: tom mais pausado e reflexivo, frase mais curta, pontuação que sinalize o fechamento — como se a voz estivesse desacelerando pra encerrar, não continuando no mesmo ritmo do meio da história.',
+      'CONSISTÊNCIA VISUAL: antes de escrever as cenas, defina em "environment" o universo/ambiente fixo da história (época, arquitetura, clima, iluminação) e em "characters" a ficha visual completa de cada personagem recorrente (se houver) — os dois em inglês, pro gerador de imagens. Em cada cena, "visual" descreve só a ação daquela cena específica (não repita a ficha dos personagens nem do universo lá), e "charactersInScene" lista os IDs de quem aparece nela. Isso é montado automaticamente no prompt de imagem de cada cena — a ficha do personagem não pode mudar entre cenas.',
       'MUITO IMPORTANTE: o total de palavras narradas somando TODAS as cenas precisa ficar entre ' + wordBudget[0] + ' e ' + wordBudget[1] + ' palavras — esse é o orçamento pra bater com a duração escolhida do vídeo. Não escreva mais que isso, mesmo que pareça pouco: ajuste o ritmo e a economia de palavras da história pra caber exatamente nesse limite, sem perder o começo-meio-fim.',
     ];
     if (usedTitles.length) {
@@ -116,7 +141,10 @@ module.exports = async (req, res) => {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 2048,
+      // Subiu de 2048: o schema agora inclui a ficha de personagens +
+      // descrição de universo, então o JSON de saída ficou bem maior,
+      // principalmente em vídeos de 60-90s (11 cenas).
+      max_tokens: 4096,
       tools: [scriptTool],
       tool_choice: { type: 'tool', name: 'roteiro_video' },
       messages: [{ role: 'user', content: prompt }],
