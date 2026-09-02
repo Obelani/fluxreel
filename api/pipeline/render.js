@@ -120,7 +120,9 @@ function buildAssSubtitles(words, style, videoWidth, videoHeight) {
   const body = lines.map(function (line) {
     if (!line.length) return '';
     return line.map(function (activeWord, i) {
-      const text = line.map(function (w, j) {
+      // Só as palavras já ditas (0..i) aparecem na tela — mostrar a linha
+      // inteira antecipava palavras que ainda não tinham sido faladas.
+      const text = line.slice(0, i + 1).map(function (w, j) {
         return wordOverride(j === i) + escapeAssText(w.word.toUpperCase());
       }).join(' ');
       return 'Dialogue: 0,' + formatAssTime(activeWord.start) + ',' + formatAssTime(activeWord.end) + ',Default,,0,0,0,,' + text;
@@ -154,17 +156,25 @@ async function buildAudio(workDir, narrationPath, musicPath) {
 // de ffmpeg. Antes eram 2 passes (visuals.mp4 renderizado e depois
 // re-decodificado só pra queimar a legenda em cima) — juntar em um só corta
 // uma codificação inteira e acelera bastante essa etapa.
-async function buildFinalVideo(workDir, imagePaths, sceneDurations, audioPath, assPath, fontsDir, width, height) {
+const END_FADE_DURATION = 0.6;
+
+async function buildFinalVideo(workDir, imagePaths, sceneDurations, audioPath, assPath, fontsDir, width, height, totalDuration) {
   const n = imagePaths.length;
   const scaleFilter = 'scale=' + width + ':' + height + ':force_original_aspect_ratio=increase,crop=' + width + ':' + height + ',setsar=1,fps=30,format=yuv420p';
   const assFilter = 'ass=' + assPath + ':fontsdir=' + fontsDir;
   const outPath = path.join(workDir, 'output.mp4');
 
+  // Fade rápido pra preto (+ áudio) nos últimos instantes, pra dar uma
+  // finalização melhor em vez do vídeo simplesmente cortar.
+  const fadeStart = Math.max(totalDuration - END_FADE_DURATION, 0).toFixed(3);
+  const videoFadeFilter = 'fade=t=out:st=' + fadeStart + ':d=' + END_FADE_DURATION;
+  const audioFadeFilter = 'afade=t=out:st=' + fadeStart + ':d=' + END_FADE_DURATION;
+
   const args = ['-y'];
 
   if (n === 1) {
     args.push('-loop', '1', '-t', sceneDurations[0].toFixed(3), '-i', imagePaths[0], '-i', audioPath);
-    args.push('-filter_complex', '[0:v]' + scaleFilter + ',' + assFilter + '[vout]');
+    args.push('-filter_complex', '[0:v]' + scaleFilter + ',' + assFilter + ',' + videoFadeFilter + '[vout]');
     args.push('-map', '[vout]', '-map', '1:a');
   } else {
     const T = TRANSITION_DURATION;
@@ -186,14 +196,14 @@ async function buildFinalVideo(workDir, imagePaths, sceneDurations, audioPath, a
       cum = cum + durations[i] - T;
       lastLabel = outLabel;
     }
-    filterParts.push('[vpre]' + assFilter + '[vout]');
+    filterParts.push('[vpre]' + assFilter + ',' + videoFadeFilter + '[vout]');
 
     args.push('-filter_complex', filterParts.join(';'), '-map', '[vout]', '-map', String(n) + ':a');
   }
 
   args.push(
     '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
-    '-c:a', 'aac', '-b:a', '192k', '-shortest', '-threads', '0',
+    '-c:a', 'aac', '-b:a', '192k', '-af', audioFadeFilter, '-shortest', '-threads', '0',
     outPath
   );
   await runFfmpeg(args);
@@ -274,7 +284,7 @@ module.exports = async (req, res) => {
     const assPath = path.join(workDir, 'captions.ass');
     await fsp.writeFile(assPath, buildAssSubtitles(words, style, WIDTH, HEIGHT));
 
-    const outputPath = await buildFinalVideo(workDir, imagePaths, sceneDurations, audioPath, assPath, fontsDir, WIDTH, HEIGHT);
+    const outputPath = await buildFinalVideo(workDir, imagePaths, sceneDurations, audioPath, assPath, fontsDir, WIDTH, HEIGHT, totalDuration);
 
     const fileBuffer = await fsp.readFile(outputPath);
     const storagePath = 'videos/' + videoId + '.mp4';
