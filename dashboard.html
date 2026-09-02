@@ -180,15 +180,26 @@
     font-family: inherit; line-height: 1.5; resize: vertical; min-height: 120px; transition: border-color 0.2s ease;
   }
   .field textarea:focus { border-color: var(--brand-blue); }
-  .field select {
+  /* Dropdown "falso" (não é <select> nativo — o navegador não deixa
+     estilizar a lista de opções de um select real, sempre volta pro
+     branco padrão do sistema quando abre). Mesmo padrão do wizard
+     (create-series.html, escolha de duração). */
+  .fake-select {
+    display: flex; align-items: center; justify-content: space-between; position: relative;
     border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1);
-    color: var(--text-primary); padding: 0 14px; height: 46px; font-size: 14px; outline: none; width: 100%;
-    font-family: inherit; transition: border-color 0.2s ease; cursor: pointer;
-    appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none' stroke='%237d7d88' stroke-width='1.6'%3E%3Cpath d='M5 7.5 10 12.5 15 7.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 14px center;
+    color: var(--text-primary); padding: 0 14px; height: 46px; font-size: 14px; width: 100%; cursor: pointer;
   }
-  .field select:focus { border-color: var(--brand-blue); }
+  .fake-select .chev { color: var(--text-faint); }
+  .dropdown-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 5;
+    border-radius: 12px; border: 1px solid var(--border-soft); background: #111119;
+    box-shadow: 0 20px 40px -12px rgba(0,0,0,0.6); overflow: hidden; display: none;
+    max-height: 260px; overflow-y: auto;
+  }
+  .dropdown-menu.open { display: block; }
+  .dropdown-menu button { display: block; width: 100%; text-align: left; padding: 12px 14px; font-size: 14px; color: #d4d4d8; background: none; border: none; cursor: pointer; }
+  .dropdown-menu button:hover { background: var(--surface-3); }
+  .dropdown-menu button.is-selected { color: #fff; font-weight: 600; }
   .modal-grid { margin-top: 24px; display: grid; gap: 32px; }
   @media (min-width: 900px) { .modal-grid { grid-template-columns: 1fr 300px; } }
 
@@ -491,9 +502,13 @@
       <label for="generate-custom-prompt">Tema específico (opcional)</label>
       <textarea id="generate-custom-prompt" rows="5" placeholder="Ex: Fale sobre a lenda do Curupira"></textarea>
     </div>
-    <div class="field" style="margin-top:14px;">
-      <label for="generate-custom-style">Estilo visual (opcional)</label>
-      <select id="generate-custom-style"></select>
+    <div class="field" style="margin-top:14px; position:relative;">
+      <span style="font-size:13px;font-weight:500;color:#c7c7ce;">Estilo visual (opcional)</span>
+      <button type="button" class="fake-select" id="generate-style-btn">
+        <span id="generate-style-label">Usar o estilo da série</span>
+        <span class="chev">⌄</span>
+      </button>
+      <div class="dropdown-menu" id="generate-style-menu"></div>
     </div>
     <button type="button" class="btn btn-gradient" id="generate-modal-confirm" style="width:100%; margin-top:16px;">Gerar vídeo</button>
   </div>
@@ -596,19 +611,35 @@
   // Modal "Gerar novo vídeo": pergunta um tema específico opcional antes de
   // disparar a geração — em vez de já sair gerando direto ao clicar.
   var generateModalSeriesId = null;
+  var generateModalStyle = '';
+  var styleMenuBtn = document.getElementById('generate-style-btn');
+  var styleMenu = document.getElementById('generate-style-menu');
+
   function openGenerateModal(seriesId) {
     generateModalSeriesId = seriesId;
+    generateModalStyle = '';
     document.getElementById('generate-custom-prompt').value = '';
 
     var series = seriesFor(seriesId);
     var seriesStyleLabel = (series && (STYLE_LABELS[series.style] || series.style)) || 'padrão da série';
-    var styleSelect = document.getElementById('generate-custom-style');
-    styleSelect.innerHTML =
-      '<option value="">Usar o estilo da série (' + seriesStyleLabel + ')</option>' +
+    var defaultLabel = 'Usar o estilo da série (' + seriesStyleLabel + ')';
+    document.getElementById('generate-style-label').textContent = defaultLabel;
+
+    styleMenu.innerHTML =
+      '<button type="button" data-value="" class="is-selected">' + defaultLabel + '</button>' +
       Object.keys(STYLE_LABELS).map(function (id) {
-        return '<option value="' + id + '">' + STYLE_LABELS[id] + '</option>';
+        return '<button type="button" data-value="' + id + '">' + STYLE_LABELS[id] + '</button>';
       }).join('');
-    styleSelect.value = '';
+    styleMenu.classList.remove('open');
+    styleMenu.querySelectorAll('button').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        styleMenu.querySelectorAll('button').forEach(function (o) { o.classList.remove('is-selected'); });
+        opt.classList.add('is-selected');
+        generateModalStyle = opt.getAttribute('data-value');
+        document.getElementById('generate-style-label').textContent = opt.textContent;
+        styleMenu.classList.remove('open');
+      });
+    });
 
     document.getElementById('generate-modal-overlay').hidden = false;
     document.body.style.overflow = 'hidden';
@@ -616,14 +647,19 @@
   function closeGenerateModal() {
     document.getElementById('generate-modal-overlay').hidden = true;
     document.body.style.overflow = '';
+    styleMenu.classList.remove('open');
   }
+  styleMenuBtn.addEventListener('click', function () { styleMenu.classList.toggle('open'); });
+  document.addEventListener('click', function (e) {
+    if (!styleMenuBtn.contains(e.target) && !styleMenu.contains(e.target)) styleMenu.classList.remove('open');
+  });
   document.getElementById('generate-modal-close').addEventListener('click', closeGenerateModal);
   document.getElementById('generate-modal-overlay').addEventListener('click', function (e) {
     if (e.target === this) closeGenerateModal();
   });
   document.getElementById('generate-modal-confirm').addEventListener('click', function () {
     var customPrompt = document.getElementById('generate-custom-prompt').value.trim();
-    var customStyle = document.getElementById('generate-custom-style').value;
+    var customStyle = generateModalStyle;
     var seriesId = generateModalSeriesId;
     closeGenerateModal();
     if (seriesId) startVideoGeneration(seriesId, customPrompt || null, customStyle || null);
