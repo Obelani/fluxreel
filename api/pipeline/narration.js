@@ -21,7 +21,9 @@ async function generateNarrationAudio(voiceId, text) {
     body: JSON.stringify({
       text: text,
       model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      // Valores testados manualmente no playground da ElevenLabs — deixam a
+      // narração menos "lendo" e com mais entonação.
+      voice_settings: { stability: 0.4, similarity_boost: 0.63, style: 0.35, speed: 1.0 },
     }),
   });
   if (!res.ok) {
