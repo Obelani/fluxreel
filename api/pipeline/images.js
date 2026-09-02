@@ -92,7 +92,9 @@ module.exports = async (req, res) => {
     const scenes = video.script.scenes;
     const characters = video.script.characters || [];
     const environment = video.script.environment || '';
-    const selectedVisualStyle = video.series.style;
+    // Estilo específico pedido pra esse vídeo (dropdown do modal "Gerar
+    // vídeo" no dashboard) tem prioridade sobre o estilo padrão da série.
+    const selectedVisualStyle = video.custom_style || video.series.style;
     const seed = seedFromVideoId(videoId);
 
     const prompts = scenes.map(function (scene, i) {

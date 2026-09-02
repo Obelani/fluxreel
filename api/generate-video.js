@@ -1,6 +1,7 @@
 const { getAuthenticatedUser } = require('./_lib/auth');
 const { getSupabaseAdmin } = require('./_lib/supabaseAdmin');
 const { publishNextStep } = require('./_lib/qstash');
+const { VISUAL_STYLES } = require('./_lib/visualStyles');
 
 // Dispara a geração de um vídeo pra uma série já criada. Debita 1 crédito
 // de forma atômica, cria a linha em `videos` e entrega a primeira etapa do
@@ -28,6 +29,12 @@ module.exports = async (req, res) => {
     // Tema específico só pra esse vídeo (opcional) — sobrepõe o nicho da
     // série apenas na geração do roteiro dele, sem alterar a série.
     const customPrompt = typeof req.body.custom_prompt === 'string' ? req.body.custom_prompt.trim().slice(0, 2000) : null;
+    // Estilo visual específico só pra esse vídeo (opcional) — sobrepõe o
+    // estilo da série apenas na geração das imagens dele. Ignora valor
+    // inválido em vez de guardar lixo no banco (a etapa de imagem já cai no
+    // fallback se vier vazio, mas aqui é melhor nem persistir um id errado).
+    const customStyleRaw = typeof req.body.custom_style === 'string' ? req.body.custom_style.trim() : null;
+    const customStyle = customStyleRaw && VISUAL_STYLES[customStyleRaw] ? customStyleRaw : null;
 
     const supabase = getSupabaseAdmin();
 
@@ -55,7 +62,7 @@ module.exports = async (req, res) => {
     try {
       const { data: video, error: videoError } = await supabase
         .from('videos')
-        .insert({ user_id: user.id, series_id: seriesId, status: 'queued', custom_prompt: customPrompt || null })
+        .insert({ user_id: user.id, series_id: seriesId, status: 'queued', custom_prompt: customPrompt || null, custom_style: customStyle })
         .select('id')
         .single();
       if (videoError) throw videoError;

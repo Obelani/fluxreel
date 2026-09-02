@@ -173,6 +173,22 @@
   .lang-pill.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); color: #fff; }
 
   .option-list { display: flex; flex-direction: column; gap: 10px; }
+  .option-list-scroll { max-height: 400px; overflow-y: auto; padding-right: 4px; }
+
+  /* Scroll customizado (listas de nicho, voz e música) — mesma cor de marca
+     em vez da barra padrão do navegador. */
+  .niche-grid-scroll, .option-list-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(79,107,255,0.5) transparent;
+  }
+  .niche-grid-scroll::-webkit-scrollbar, .option-list-scroll::-webkit-scrollbar { width: 6px; }
+  .niche-grid-scroll::-webkit-scrollbar-track, .option-list-scroll::-webkit-scrollbar-track { background: transparent; }
+  .niche-grid-scroll::-webkit-scrollbar-thumb, .option-list-scroll::-webkit-scrollbar-thumb {
+    background: rgba(79,107,255,0.5); border-radius: 999px;
+  }
+  .niche-grid-scroll::-webkit-scrollbar-thumb:hover, .option-list-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(79,107,255,0.8);
+  }
   .option-row {
     display: flex; align-items: center; gap: 14px;
     border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1);
@@ -501,7 +517,9 @@
         <p>Escolha o idioma da narração e a voz de IA que vai contar suas histórias.</p>
       </div>
       <div class="lang-pills" id="lang-pills"></div>
-      <div class="option-list" id="voice-list"></div>
+      <div class="option-list-scroll">
+        <div class="option-list" id="voice-list"></div>
+      </div>
     </section>
 
     <!-- ===================== ETAPA 3 — MÚSICA DE FUNDO ===================== -->
@@ -514,7 +532,9 @@
         </div>
         <p>Escolha uma trilha para tocar por baixo da narração, ou pule esta etapa.</p>
       </div>
-      <div class="option-list" id="music-list"></div>
+      <div class="option-list-scroll">
+        <div class="option-list" id="music-list"></div>
+      </div>
     </section>
 
     <!-- ===================== ETAPA 4 — ESTILO VISUAL ===================== -->
@@ -1141,6 +1161,11 @@
   }
 
   document.getElementById('btn-back').addEventListener('click', function () {
+    if (state.step === 3 && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
     if (state.step > 1) { state.step--; showStep(state.step); }
   });
 
@@ -1187,6 +1212,12 @@
   document.getElementById('btn-next').addEventListener('click', async function () {
     var err = validateStep(state.step);
     if (err) { showError(err); return; }
+    // Sai da etapa de música (3) com o preview tocando — pausa antes de avançar.
+    if (state.step === 3 && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
     if (state.step === TOTAL_STEPS) {
       var btn = this;
       btn.disabled = true;

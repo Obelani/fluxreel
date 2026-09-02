@@ -12,15 +12,19 @@ const SCENE_COUNT_BY_DURATION = {
 };
 
 // Faixa de duração -> orçamento de palavras narradas (somando todas as
-// cenas), pra o áudio final bater com o tempo escolhido no wizard. Baseado
-// em ritmo médio de fala em português (~2.3-2.6 palavras/segundo) — sem
-// isso, o Claude escrevia narração livre e o vídeo saía bem mais longo que
-// o selecionado (ex.: "15-30s" virando 65s de vídeo).
+// cenas), pra o áudio final bater com o tempo escolhido no wizard.
+// Recalibrado pra baixo (~30%) depois de 2 testes reais estourando mesmo
+// com o orçamento antigo: 30s pedido virou 44s, 40s pedido virou 56s —
+// razão de ~1.4x acima do esperado, mesmo com script.js já validando e
+// pedindo reescrita quando estoura. A causa provável é o ritmo real de
+// fala da ElevenLabs (ajustado por `stability`/`style`/`speed` em
+// narration.js) ser mais devagar do que a estimativa original de
+// ~2.3-2.6 palavras/segundo assumia.
 const WORD_BUDGET_BY_DURATION = {
-  '15-30': [35, 70],
-  '30-40': [70, 100],
-  '40-60': [95, 150],
-  '60-90': [145, 220],
+  '15-30': [25, 50],
+  '30-40': [50, 70],
+  '40-60': [65, 105],
+  '60-90': [100, 155],
 };
 
 // Nome da voz escolhida no wizard -> voice_id da ElevenLabs.

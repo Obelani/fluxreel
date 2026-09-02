@@ -83,15 +83,33 @@ function escapeAssText(text) {
 // wizard). Fundo colorido (bold-yellow/blackbox) é aproximado com contorno
 // (\bord/\3c) — não é uma "pílula" de verdade, ajustar depois de ver um
 // render real.
-function buildAssSubtitles(words, style, videoWidth, videoHeight) {
-  const LINE_SIZE = 6;
+// Timestamps do Whisper às vezes vêm com a palavra i terminando depois do
+// início da palavra i+1 (imprecisão do ASR, mais comum com fala mais
+// rápida) — isso fazia dois eventos de legenda ficarem visíveis ao mesmo
+// tempo (texto "encavalando"). Garante que uma palavra nunca ultrapasse o
+// início da próxima.
+function clampWordTimings(words) {
+  return words.map(function (w, i) {
+    const next = words[i + 1];
+    if (next && w.end > next.start) {
+      return Object.assign({}, w, { end: next.start });
+    }
+    return w;
+  });
+}
+
+function buildAssSubtitles(rawWords, style, videoWidth, videoHeight) {
+  const words = clampWordTimings(rawWords);
+  // Menos palavras por linha = menos texto acumulado na tela por vez.
+  const LINE_SIZE = 4;
   const lines = [];
   for (let i = 0; i < words.length; i += LINE_SIZE) lines.push(words.slice(i, i + LINE_SIZE));
 
   const fillColor = toAssColor(style.fillColor);
   const highlightColor = toAssColor(style.highlightTextColor);
   const bgColor = style.backgroundColor ? toAssColor(style.backgroundColor) : null;
-  const fontSize = Math.round(videoHeight * 0.045);
+  // +15% em relação ao tamanho anterior (0.045 -> ~0.05175 da altura).
+  const fontSize = Math.round(videoHeight * 0.045 * 1.15);
   const bold = style.bold ? -1 : 0;
   // Sobe a legenda ~20% da altura do vídeo em relação à posição anterior
   // (180px de margem inferior) — estava ficando escondida atrás dos
