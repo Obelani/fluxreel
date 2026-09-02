@@ -81,7 +81,10 @@ module.exports = async (req, res) => {
 
     const promptParts = [
       'Escreva o roteiro de um vídeo curto e viral para redes sociais (estilo TikTok/Reels/Shorts).',
-      'Nicho: ' + series.niche + '.',
+      // series.niche agora é uma frase completa (preset com descrição rica
+      // ou texto livre do "Personalizado" no wizard) — não força mais um
+      // "." no final, pra não duplicar pontuação.
+      'Nicho: ' + series.niche.trim().replace(/[.!?]+$/, '') + '.',
       'Idioma da narração: português do Brasil.',
       'Divida em exatamente ' + sceneCount + ' cenas.',
       'Cada cena tem uma narração curta (1 a 3 frases) que prende a atenção, e uma descrição visual em inglês para gerar a imagem daquela cena.',

@@ -118,13 +118,22 @@
   .wizard-step.active { display: block; }
 
   /* ---------- Etapa 1: nicho ---------- */
+  .niche-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border-soft); margin-bottom: 20px; }
+  .niche-tab {
+    background: none; border: none; padding: 0 0 10px; margin-bottom: -1px;
+    font-size: 14px; font-weight: 600; color: var(--text-faint); border-bottom: 2px solid transparent;
+  }
+  .niche-tab.is-active { color: #fff; border-bottom-color: #fff; }
+  .niche-tab-panel[hidden] { display: none; }
+  .niche-grid-scroll { max-height: 420px; overflow-y: auto; padding-right: 4px; }
   .niche-grid { display: flex; flex-direction: column; gap: 10px; }
   .niche-card {
-    display: flex; flex-direction: row; align-items: center; gap: 14px;
+    display: flex; flex-direction: column; gap: 6px;
     border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1);
     padding: 14px 16px; text-align: left; width: 100%; transition: border-color 0.2s ease, background 0.2s ease;
   }
   .niche-card:hover { background: var(--surface-3); }
+  .niche-card-top { display: flex; flex-direction: row; align-items: center; gap: 14px; }
   .niche-card .emoji {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
     height: 40px; width: 40px; border-radius: 10px; font-size: 19px;
@@ -137,6 +146,7 @@
     flex-shrink: 0; height: 20px; width: 20px; border-radius: 999px; border: 1px solid var(--border-soft);
     display: flex; align-items: center; justify-content: center;
   }
+  .niche-card .desc { font-size: 12px; color: var(--text-faint); line-height: 1.4; padding-left: 54px; }
   .niche-card.is-selected { border-color: rgba(79,107,255,0.6); background: rgba(79,107,255,0.10); }
   .niche-card.is-selected .row-check {
     border-color: transparent; background-image: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan));
@@ -144,12 +154,15 @@
   .niche-card.is-selected .row-check::after { content: "✓"; font-size: 12px; color: #fff; }
   .field { display: flex; flex-direction: column; gap: 8px; }
   .field label { font-size: 13px; font-weight: 500; color: #c7c7ce; }
-  .field input, .field .fake-select {
-    height: 46px; border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1);
+  .field input, .field textarea, .field .fake-select {
+    border-radius: 12px; border: 1px solid var(--border-soft); background: var(--surface-1);
     color: var(--text-primary); padding: 0 14px; font-size: 14px; outline: none; transition: border-color 0.2s ease;
     width: 100%;
   }
-  .field input:focus { border-color: var(--brand-blue); }
+  .field input, .field .fake-select { height: 46px; }
+  .field textarea { padding: 12px 14px; font-family: inherit; line-height: 1.5; }
+  .field input:focus, .field textarea:focus { border-color: var(--brand-blue); }
+  #niche-custom-input { min-height: 140px; resize: vertical; }
 
   /* ---------- Etapa 2/3: listas com preview de áudio ---------- */
   .lang-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
@@ -459,8 +472,22 @@
         </div>
         <p>Isso ajuda a IA a criar roteiros, imagens e legendas com o tom certo para o seu público.</p>
       </div>
-      <div class="niche-grid" id="niche-grid">
-        <!-- preenchido via JS -->
+      <div class="niche-tabs">
+        <button type="button" class="niche-tab is-active" data-niche-tab="presets">Presets</button>
+        <button type="button" class="niche-tab" data-niche-tab="custom">Personalizado</button>
+      </div>
+      <div class="niche-tab-panel" id="niche-tab-presets">
+        <div class="niche-grid-scroll">
+          <div class="niche-grid" id="niche-grid">
+            <!-- preenchido via JS -->
+          </div>
+        </div>
+      </div>
+      <div class="niche-tab-panel" id="niche-tab-custom" hidden>
+        <div class="field">
+          <label for="niche-custom-input">Descreva seu nicho</label>
+          <textarea id="niche-custom-input" rows="5" placeholder="Ex: Curiosidades sobre o oceano profundo, com tom científico e assombrado"></textarea>
+        </div>
       </div>
     </section>
 
@@ -717,15 +744,31 @@
   if (authGate) authGate.classList.add('hidden');
 
   // ===================== DADOS =====================
+  // [id, emoji, label, descrição] — a descrição é o que de fato vira o
+  // "nicho" mandado pro Claude gerar o roteiro (mais rica que só o label
+  // curto, ver api/pipeline/script.js).
   var NICHES = [
-    ['terror', '👻', 'Terror'],
-    ['mitologia', '⚡', 'Mitologia'],
-    ['historias-reais', '📖', 'Histórias reais'],
-    ['curiosidades', '🧠', 'Curiosidades'],
-    ['motivacao', '🔥', 'Motivação'],
-    ['conspiracoes', '🕵️', 'Conspirações'],
-    ['ciencia', '🔬', 'Ciência'],
-    ['ficcao', '🚀', 'Ficção']
+    ['terror', '👻', 'Terror', 'Histórias de terror originais, inventadas do zero a cada vídeo.'],
+    ['mitologia', '⚡', 'Mitologia', 'Deuses, monstros e escolhas com preço alto, além do óbvio.'],
+    ['historias-reais', '📖', 'Histórias reais', 'Fatos e eventos reais, contados com detalhes que prendem a atenção.'],
+    ['curiosidades', '💭', 'Curiosidades', 'Fatos curiosos e pouco conhecidos, do jeito que ninguém te contou.'],
+    ['motivacao', '🔥', 'Motivação', 'Mensagens de superação e crescimento pessoal pra inspirar quem assiste.'],
+    ['conspiracoes', '🔍', 'Conspirações', 'Teorias, mistérios e questionamentos sobre o que te contaram.'],
+    ['ciencia', '🔬', 'Ciência', 'Descobertas e explicações científicas que parecem ficção.'],
+    ['ficcao', '🚀', 'Ficção', 'Roteiros ficcionais originais, inventados do zero a cada vídeo.'],
+    ['religioso', '🙏', 'Religioso', 'Histórias e ensinamentos religiosos, contados com respeito e profundidade.'],
+    ['crimes-misterios', '🕵️', 'Crimes e mistérios', 'Casos reais e mistérios não resolvidos, contados com frieza e respeito.'],
+    ['historia', '🏛️', 'História', 'Fatos históricos marcantes, contados como se você estivesse lá.'],
+    ['animais', '🐾', 'Animais', 'Curiosidades e histórias fascinantes do mundo animal.'],
+    ['psicologia', '🧠', 'Psicologia', 'Comportamento humano e mente explicados de um jeito que gruda.'],
+    ['relacionamentos', '❤️', 'Relacionamentos', 'Amor, vínculos e relações contados com verdade, sem clichê.'],
+    ['dinheiro', '💰', 'Dinheiro e finanças', 'Educação financeira e histórias de dinheiro que ensinam de verdade.'],
+    ['geografia', '🗺️', 'Países e geografia', 'Lugares, culturas e curiosidades do mundo que poucos conhecem.'],
+    ['games', '🎮', 'Games', 'Curiosidades, lore e histórias do universo dos games.'],
+    ['carros', '🚗', 'Carros', 'Curiosidades, história e cultura automotiva pra quem é apaixonado.'],
+    ['sobrevivencia', '🛡️', 'Sobrevivência', 'Situações extremas e estratégias reais de sobrevivência.'],
+    ['cinema', '🎬', 'Cinema e séries', 'Curiosidades, bastidores e teorias sobre filmes e séries.'],
+    ['filosofia', '💡', 'Filosofia', 'Grandes perguntas da vida, explicadas sem enrolação.']
   ];
   var NICHE_TINTS = ['tint-blue', 'tint-violet', 'tint-cyan'];
 
@@ -812,17 +855,40 @@
   nicheGrid.innerHTML = NICHES.map(function (n, i) {
     var tint = NICHE_TINTS[i % NICHE_TINTS.length];
     return '<button type="button" class="niche-card" data-niche="' + n[0] + '">' +
-      '<span class="emoji ' + tint + '">' + n[1] + '</span>' +
-      '<span class="label">' + n[2] + '</span>' +
-      '<span class="row-check"></span></button>';
+      '<div class="niche-card-top">' +
+        '<span class="emoji ' + tint + '">' + n[1] + '</span>' +
+        '<span class="label">' + n[2] + '</span>' +
+        '<span class="row-check"></span>' +
+      '</div>' +
+      '<p class="desc">' + n[3] + '</p>' +
+    '</button>';
   }).join('');
-  nicheGrid.querySelectorAll('.niche-card').forEach(function (card) {
+  nicheGrid.querySelectorAll('.niche-card').forEach(function (card, i) {
     card.addEventListener('click', function () {
       nicheGrid.querySelectorAll('.niche-card').forEach(function (c) { c.classList.remove('is-selected'); });
       card.classList.add('is-selected');
-      state.niche = card.getAttribute('data-niche');
+      // O valor real de "nicho" mandado pra IA é a descrição completa, não
+      // o label curto — dá mais contexto pro roteiro (ver NICHES acima).
+      state.niche = NICHES[i][3];
       hideError();
     });
+  });
+
+  // Presets vs. Personalizado: troca só a aba visível, não mexe em
+  // state.niche — se o usuário já tinha escolhido algo na outra aba, o
+  // valor continua valendo até ele interagir com a aba atual.
+  document.querySelectorAll('.niche-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var target = tab.getAttribute('data-niche-tab');
+      document.querySelectorAll('.niche-tab').forEach(function (t) { t.classList.toggle('is-active', t === tab); });
+      document.getElementById('niche-tab-presets').hidden = target !== 'presets';
+      document.getElementById('niche-tab-custom').hidden = target !== 'custom';
+    });
+  });
+  document.getElementById('niche-custom-input').addEventListener('input', function (e) {
+    nicheGrid.querySelectorAll('.niche-card').forEach(function (c) { c.classList.remove('is-selected'); });
+    state.niche = e.target.value.trim();
+    hideError();
   });
 
   // ===================== ETAPA 2 =====================
