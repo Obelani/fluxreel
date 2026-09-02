@@ -2,6 +2,7 @@ const { getSupabaseAdmin } = require('../_lib/supabaseAdmin');
 const { readVerifiedQstashPayload, markVideoFailed } = require('../_lib/pipelineStage');
 const { publishNextStep } = require('../_lib/qstash');
 const { VOICE_IDS } = require('../_lib/pipelineConfig');
+const { generateNarrationAudio } = require('../_lib/elevenlabs');
 
 module.exports.config = { api: { bodyParser: false } };
 
@@ -9,29 +10,6 @@ module.exports.config = { api: { bodyParser: false } };
 // (áudio de narração, e futuramente o vídeo final). Precisa existir e estar
 // marcado como público — ver LEIA-ME/checklist de setup.
 const STORAGE_BUCKET = 'media';
-
-async function generateNarrationAudio(voiceId, text) {
-  const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
-    method: 'POST',
-    headers: {
-      'xi-api-key': process.env.ELEVENLABS_API_KEY,
-      'Content-Type': 'application/json',
-      Accept: 'audio/mpeg',
-    },
-    body: JSON.stringify({
-      text: text,
-      model_id: 'eleven_multilingual_v2',
-      // Valores testados manualmente no playground da ElevenLabs — deixam a
-      // narração menos "lendo" e com mais entonação.
-      voice_settings: { stability: 0.35, similarity_boost: 0.6, style: 0.43, speed: 1.2 },
-    }),
-  });
-  if (!res.ok) {
-    const errText = await res.text().catch(function () { return ''; });
-    throw new Error('ElevenLabs respondeu ' + res.status + ': ' + errText.slice(0, 500));
-  }
-  return Buffer.from(await res.arrayBuffer());
-}
 
 // Etapa 3: junta a narração de todas as cenas num único áudio (ElevenLabs),
 // guarda no Supabase Storage.

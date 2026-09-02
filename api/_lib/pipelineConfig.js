@@ -27,6 +27,18 @@ const WORD_BUDGET_BY_DURATION = {
   '60-90': [100, 155],
 };
 
+// Faixa de duração -> limite máximo real em segundos (o topo da faixa).
+// Usado em api/pipeline/captions.js pra validar a duração de VERDADE do
+// áudio (medida pelo Whisper, não estimada por contagem de palavras) —
+// diferente do WORD_BUDGET_BY_DURATION acima, que é só uma estimativa
+// prévia; esse aqui é a checagem contra o fato consumado.
+const DURATION_BUCKET_SECONDS = {
+  '15-30': 30,
+  '30-40': 40,
+  '40-60': 60,
+  '60-90': 90,
+};
+
 // Nome da voz escolhida no wizard -> voice_id da ElevenLabs.
 const VOICE_IDS = {
   Rafael: 'orF2qy9215xjwqqxqsWW',
@@ -90,4 +102,4 @@ const CAPTION_FONTS = {
   oswald: { label: 'Oswald', fontFamily: 'Oswald', bold: true, files: ['Oswald-Bold.ttf'] },
 };
 
-module.exports = { SCENE_COUNT_BY_DURATION, WORD_BUDGET_BY_DURATION, VOICE_IDS, CAPTION_STYLES, CAPTION_FONTS };
+module.exports = { SCENE_COUNT_BY_DURATION, WORD_BUDGET_BY_DURATION, DURATION_BUCKET_SECONDS, VOICE_IDS, CAPTION_STYLES, CAPTION_FONTS };
