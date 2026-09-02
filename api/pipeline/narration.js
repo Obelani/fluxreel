@@ -23,7 +23,7 @@ async function generateNarrationAudio(voiceId, text) {
       model_id: 'eleven_multilingual_v2',
       // Valores testados manualmente no playground da ElevenLabs — deixam a
       // narração menos "lendo" e com mais entonação.
-      voice_settings: { stability: 0.4, similarity_boost: 0.63, style: 0.35, speed: 1.0 },
+      voice_settings: { stability: 0.35, similarity_boost: 0.6, style: 0.43, speed: 1.2 },
     }),
   });
   if (!res.ok) {

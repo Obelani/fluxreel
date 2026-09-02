@@ -114,6 +114,10 @@ module.exports = async (req, res) => {
     const nicheForPrompt = (video.custom_prompt && video.custom_prompt.trim()) || series.niche;
 
     const promptParts = [
+      // Orçamento de palavras logo no início — é a instrução mais violada
+      // na prática (vídeos saindo bem mais longos que a duração escolhida),
+      // por isso vem antes de tudo, não enterrada no fim do prompt.
+      'LIMITE MAIS IMPORTANTE DESTE ROTEIRO: o total de palavras narradas (somando TODAS as cenas) precisa ficar entre ' + wordBudget[0] + ' e ' + wordBudget[1] + ' palavras — esse é o orçamento pra bater com a duração de vídeo escolhida pelo usuário. Isso é mais importante que detalhar a história — se precisar escolher, prefira uma história mais simples e dentro do limite do que uma história rica que estoura o limite.',
       'Escreva o roteiro de um vídeo curto e viral para redes sociais (estilo TikTok/Reels/Shorts).',
       // nicheForPrompt costuma vir como frase completa (preset com descrição
       // rica, texto livre do "Personalizado" no wizard, ou o tema específico
@@ -124,11 +128,10 @@ module.exports = async (req, res) => {
       'Divida em exatamente ' + sceneCount + ' cenas.',
       'Cada cena tem uma narração curta (1 a 3 frases) que prende a atenção, e uma descrição visual em inglês para gerar a imagem daquela cena.',
       'A primeira cena precisa ser um gancho forte que prenda a atenção nos primeiros segundos.',
-      'As ' + sceneCount + ' cenas juntas formam uma história COMPLETA, com começo, meio e fim — planeje o arco inteiro antes de escrever, distribuindo o desenvolvimento e a conclusão dentro desse número exato de cenas.',
+      'As ' + sceneCount + ' cenas juntas formam uma história COMPLETA, com começo, meio e fim — planeje o arco inteiro antes de escrever, distribuindo o desenvolvimento e a conclusão dentro desse número exato de cenas E dentro do orçamento de palavras acima.',
       'A última cena precisa fechar a história com uma conclusão clara (revelação, resolução, virada ou reflexão final) — nunca termine de forma abrupta, incompleta ou como se faltasse continuação.',
       'Marque o papel de cada cena no campo "role" (gancho/desenvolvimento/conclusao) — pense no arco completo ANTES de escrever a narração de cada uma. A narração da(s) cena(s) de conclusão precisa soar diferente do resto: tom mais pausado e reflexivo, frase mais curta, pontuação que sinalize o fechamento — como se a voz estivesse desacelerando pra encerrar, não continuando no mesmo ritmo do meio da história.',
       'CONSISTÊNCIA VISUAL: antes de escrever as cenas, defina em "environment" o universo/ambiente fixo da história (época, arquitetura, clima, iluminação) e em "characters" a ficha visual completa de cada personagem recorrente (se houver) — os dois em inglês, pro gerador de imagens. Em cada cena, "visual" descreve só a ação daquela cena específica (não repita a ficha dos personagens nem do universo lá), e "charactersInScene" lista os IDs de quem aparece nela. Isso é montado automaticamente no prompt de imagem de cada cena — a ficha do personagem não pode mudar entre cenas.',
-      'MUITO IMPORTANTE: o total de palavras narradas somando TODAS as cenas precisa ficar entre ' + wordBudget[0] + ' e ' + wordBudget[1] + ' palavras — esse é o orçamento pra bater com a duração escolhida do vídeo. Não escreva mais que isso, mesmo que pareça pouco: ajuste o ritmo e a economia de palavras da história pra caber exatamente nesse limite, sem perder o começo-meio-fim.',
     ];
     if (usedTitles.length) {
       promptParts.push(
@@ -139,21 +142,62 @@ module.exports = async (req, res) => {
     const prompt = promptParts.join(' ');
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-5',
-      // Subiu de 2048: o schema agora inclui a ficha de personagens +
-      // descrição de universo, então o JSON de saída ficou bem maior,
-      // principalmente em vídeos de 60-90s (11 cenas).
-      max_tokens: 4096,
-      tools: [scriptTool],
-      tool_choice: { type: 'tool', name: 'roteiro_video' },
-      messages: [{ role: 'user', content: prompt }],
-    });
 
-    const toolUse = response.content.find(function (block) { return block.type === 'tool_use'; });
-    if (!toolUse) throw new Error('Claude não retornou o roteiro no formato esperado');
-    const scriptData = toolUse.input;
+    async function callClaudeForScript(messages) {
+      const claudeResponse = await anthropic.messages.create({
+        model: 'claude-sonnet-5',
+        // Subiu de 2048: o schema agora inclui a ficha de personagens +
+        // descrição de universo, então o JSON de saída ficou bem maior,
+        // principalmente em vídeos de 60-90s (11 cenas).
+        max_tokens: 4096,
+        tools: [scriptTool],
+        tool_choice: { type: 'tool', name: 'roteiro_video' },
+        messages: messages,
+      });
+      const claudeToolUse = claudeResponse.content.find(function (block) { return block.type === 'tool_use'; });
+      if (!claudeToolUse) throw new Error('Claude não retornou o roteiro no formato esperado');
+      return { response: claudeResponse, toolUse: claudeToolUse };
+    }
+
+    function countNarrationWords(data) {
+      const text = data.scenes.map(function (s) { return s.narration || ''; }).join(' ');
+      return text.trim().split(/\s+/).filter(Boolean).length;
+    }
+
+    let messages = [{ role: 'user', content: prompt }];
+    let attempt = await callClaudeForScript(messages);
+    let scriptData = attempt.toolUse.input;
     if (!scriptData.scenes || !scriptData.scenes.length) throw new Error('Roteiro veio sem cenas');
+
+    // Validação real (não só a instrução) — se estourou o orçamento de
+    // palavras, pede pro PRÓPRIO Claude reescrever mais enxuto (ele entende
+    // a história inteira e consegue cortar sem perder a conexão entre as
+    // cenas, diferente de um corte mecânico nosso). Só 1 tentativa extra —
+    // se ainda estourar depois, segue com o que veio e só registra o aviso.
+    const wordCount = countNarrationWords(scriptData);
+    if (wordCount > wordBudget[1]) {
+      console.warn('[pipeline/script] Roteiro do vídeo', videoId, 'veio com', wordCount, 'palavras (limite', wordBudget[1] + ') — pedindo reescrita mais enxuta.');
+      try {
+        const retryMessages = messages.concat([
+          { role: 'assistant', content: attempt.response.content },
+          {
+            role: 'user',
+            content:
+              'Seu roteiro ficou com ' + wordCount + ' palavras narradas no total, mas o limite era entre ' + wordBudget[0] + ' e ' + wordBudget[1] + ' palavras. ' +
+              'Reescreva o roteiro completo (chame a ferramenta "roteiro_video" de novo) mais enxuto: mesmo número de cenas (' + scriptData.scenes.length + '), mesma história e mesma conclusão forte no final — só com falas mais diretas e econômicas nas cenas de desenvolvimento. Não pode passar de ' + wordBudget[1] + ' palavras no total.',
+          },
+        ]);
+        const retryAttempt = await callClaudeForScript(retryMessages);
+        const retryScriptData = retryAttempt.toolUse.input;
+        if (retryScriptData.scenes && retryScriptData.scenes.length) {
+          const retryWordCount = countNarrationWords(retryScriptData);
+          console.warn('[pipeline/script] Reescrita do vídeo', videoId, 'ficou com', retryWordCount, 'palavras.');
+          scriptData = retryScriptData;
+        }
+      } catch (retryErr) {
+        console.error('[pipeline/script] Falha na reescrita do vídeo', videoId, '— seguindo com a primeira versão.', retryErr.message);
+      }
+    }
 
     await supabase
       .from('videos')
