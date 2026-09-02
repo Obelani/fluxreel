@@ -68,10 +68,15 @@ module.exports = async (req, res) => {
             items: {
               type: 'object',
               properties: {
-                narration: { type: 'string', description: 'Texto narrado nessa cena, em português do Brasil, 1 a 3 frases.' },
+                role: {
+                  type: 'string',
+                  enum: ['gancho', 'desenvolvimento', 'conclusao'],
+                  description: 'Papel dessa cena na história: "gancho" (só a 1ª cena), "desenvolvimento" (cenas do meio) ou "conclusao" (só a(s) última(s) cena(s) — precisa fechar a história de vez).',
+                },
+                narration: { type: 'string', description: 'Texto narrado nessa cena, em português do Brasil, 1 a 3 frases. Na(s) cena(s) com role="conclusao", use um tom perceptivelmente mais pausado/reflexivo/conclusivo (frase mais curta, pontuação que sinalize fechamento) — diferente do ritmo do resto do vídeo.' },
                 visual: { type: 'string', description: 'Descrição visual da cena, em inglês, para um gerador de imagem por IA.' },
               },
-              required: ['narration', 'visual'],
+              required: ['role', 'narration', 'visual'],
             },
           },
         },
@@ -97,6 +102,7 @@ module.exports = async (req, res) => {
       'A primeira cena precisa ser um gancho forte que prenda a atenção nos primeiros segundos.',
       'As ' + sceneCount + ' cenas juntas formam uma história COMPLETA, com começo, meio e fim — planeje o arco inteiro antes de escrever, distribuindo o desenvolvimento e a conclusão dentro desse número exato de cenas.',
       'A última cena precisa fechar a história com uma conclusão clara (revelação, resolução, virada ou reflexão final) — nunca termine de forma abrupta, incompleta ou como se faltasse continuação.',
+      'Marque o papel de cada cena no campo "role" (gancho/desenvolvimento/conclusao) — pense no arco completo ANTES de escrever a narração de cada uma. A narração da(s) cena(s) de conclusão precisa soar diferente do resto: tom mais pausado e reflexivo, frase mais curta, pontuação que sinalize o fechamento — como se a voz estivesse desacelerando pra encerrar, não continuando no mesmo ritmo do meio da história.',
       'MUITO IMPORTANTE: o total de palavras narradas somando TODAS as cenas precisa ficar entre ' + wordBudget[0] + ' e ' + wordBudget[1] + ' palavras — esse é o orçamento pra bater com a duração escolhida do vídeo. Não escreva mais que isso, mesmo que pareça pouco: ajuste o ritmo e a economia de palavras da história pra caber exatamente nesse limite, sem perder o começo-meio-fim.',
     ];
     if (usedTitles.length) {

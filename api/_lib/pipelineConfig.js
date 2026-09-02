@@ -30,6 +30,9 @@ const VOICE_IDS = {
   Vicente: 'bhehD3jAYQsch18622NF',
   Bianca: '9LwXyqQB0mUwtLRsS227',
   Clara: 'iScHbNW8K33gNo3lGgbo',
+  Marcelo: 'jkiD8IhCU1i2V7VvmNwi',
+  Silvio: 'EIkHVdkuarjkYUyMnoes',
+  Leo: 'QyWUOLLpCqeUq1ZnuAup',
 };
 
 // Estilo visual escolhido -> sufixo de prompt (em inglês, os modelos de
