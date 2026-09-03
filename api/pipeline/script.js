@@ -43,7 +43,10 @@ module.exports = async (req, res) => {
 
     // Outros vídeos já gerados nessa série — evita que o Claude converja
     // sempre pros mesmos temas "óbvios" do nicho quando o prompt é quase
-    // idêntico a cada chamada (mesmo nicho, mesma instrução).
+    // idêntico a cada chamada (mesmo nicho, mesma instrução). Manda título
+    // + um resumo da primeira cena de cada um, não só o título — dois
+    // vídeos podem ter títulos diferentes e ainda serem sobre o mesmo
+    // assunto, então só o título é um sinal fraco demais pra evitar repetir.
     const { data: priorVideos } = await supabase
       .from('videos')
       .select('script')
@@ -52,8 +55,14 @@ module.exports = async (req, res) => {
       .not('script', 'is', null)
       .order('created_at', { ascending: false })
       .limit(20);
-    const usedTitles = (priorVideos || [])
-      .map(function (v) { return v.script && v.script.title; })
+    const usedThemes = (priorVideos || [])
+      .map(function (v) {
+        const s = v.script;
+        if (!s || !s.title) return null;
+        const firstNarration = (s.scenes && s.scenes[0] && s.scenes[0].narration) || '';
+        const snippet = firstNarration.split(/\s+/).slice(0, 18).join(' ');
+        return '"' + s.title + '"' + (snippet ? ' (' + snippet + (firstNarration.split(/\s+/).length > 18 ? '…' : '') + ')' : '');
+      })
       .filter(Boolean);
 
     const scriptTool = {
@@ -118,6 +127,14 @@ module.exports = async (req, res) => {
       // na prática (vídeos saindo bem mais longos que a duração escolhida),
       // por isso vem antes de tudo, não enterrada no fim do prompt.
       'LIMITE MAIS IMPORTANTE DESTE ROTEIRO: o total de palavras narradas (somando TODAS as cenas) precisa ficar entre ' + wordBudget[0] + ' e ' + wordBudget[1] + ' palavras — esse é o orçamento pra bater com a duração de vídeo escolhida pelo usuário. Isso é mais importante que detalhar a história — se precisar escolher, prefira uma história mais simples e dentro do limite do que uma história rica que estoura o limite.',
+    ];
+    if (usedThemes.length) {
+      promptParts.push(
+        'NÃO REPITA UM TEMA JÁ USADO: essa série já publicou os vídeos abaixo (título + resumo do começo). O roteiro novo precisa ser sobre um fato, história, mistério, personagem ou curiosidade DIFERENTE de todos eles — não só um título diferente pro mesmo assunto, o CONTEÚDO em si precisa ser outro. Se o nicho for amplo, escolha deliberadamente um ângulo ainda não coberto. Vídeos já publicados: ' +
+        usedThemes.join(' | ') + '.'
+      );
+    }
+    promptParts.push(
       'Escreva o roteiro de um vídeo curto e viral para redes sociais (estilo TikTok/Reels/Shorts).',
       // nicheForPrompt costuma vir como frase completa (preset com descrição
       // rica, texto livre do "Personalizado" no wizard, ou o tema específico
@@ -131,14 +148,8 @@ module.exports = async (req, res) => {
       'As ' + sceneCount + ' cenas juntas formam uma história COMPLETA, com começo, meio e fim — planeje o arco inteiro antes de escrever, distribuindo o desenvolvimento e a conclusão dentro desse número exato de cenas E dentro do orçamento de palavras acima.',
       'A última cena precisa fechar a história com uma conclusão clara (revelação, resolução, virada ou reflexão final) — nunca termine de forma abrupta, incompleta ou como se faltasse continuação.',
       'Marque o papel de cada cena no campo "role" (gancho/desenvolvimento/conclusao) — pense no arco completo ANTES de escrever a narração de cada uma. A narração da(s) cena(s) de conclusão precisa soar diferente do resto: tom mais pausado e reflexivo, frase mais curta, pontuação que sinalize o fechamento — como se a voz estivesse desacelerando pra encerrar, não continuando no mesmo ritmo do meio da história.',
-      'CONSISTÊNCIA VISUAL: antes de escrever as cenas, defina em "environment" o universo/ambiente fixo da história (época, arquitetura, clima, iluminação) e em "characters" a ficha visual completa de cada personagem recorrente (se houver) — os dois em inglês, pro gerador de imagens. Em cada cena, "visual" descreve só a ação daquela cena específica (não repita a ficha dos personagens nem do universo lá), e "charactersInScene" lista os IDs de quem aparece nela. Isso é montado automaticamente no prompt de imagem de cada cena — a ficha do personagem não pode mudar entre cenas.',
-    ];
-    if (usedTitles.length) {
-      promptParts.push(
-        'Essa série já publicou vídeos com estes títulos — escolha um tema e um ângulo diferentes de todos eles, sem repetir a mesma história/fato/curiosidade: ' +
-        usedTitles.map(function (t) { return '"' + t + '"'; }).join(', ') + '.'
-      );
-    }
+      'CONSISTÊNCIA VISUAL: antes de escrever as cenas, defina em "environment" o universo/ambiente fixo da história (época, arquitetura, clima, iluminação) e em "characters" a ficha visual completa de cada personagem recorrente (se houver) — os dois em inglês, pro gerador de imagens. Em cada cena, "visual" descreve só a ação daquela cena específica (não repita a ficha dos personagens nem do universo lá), e "charactersInScene" lista os IDs de quem aparece nela. Isso é montado automaticamente no prompt de imagem de cada cena — a ficha do personagem não pode mudar entre cenas.'
+    );
     const prompt = promptParts.join(' ');
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
