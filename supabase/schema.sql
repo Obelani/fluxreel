@@ -198,3 +198,140 @@ $$;
 
 revoke all on function public.grant_subscription_credits(uuid, int, text, text) from public, anon, authenticated;
 grant execute on function public.grant_subscription_credits(uuid, int, text, text) to service_role;
+
+-- ============================================================
+-- Reversão de crédito por reembolso/disputa perdida — espelha
+-- grant_subscription_credits, mas subtrai. Nunca deixa o saldo negativo
+-- (credits já gastos não têm como "voltar" fisicamente), mas o delta real
+-- fica sempre registrado no ledger pra auditoria bater com o valor
+-- correto mesmo quando o clamp em 0 aconteceu.
+-- ============================================================
+create or replace function public.revoke_credits_for_refund(
+  p_user_id uuid,
+  p_amount int,
+  p_reason text,
+  p_stripe_event_id text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.credit_ledger (user_id, delta, reason, stripe_event_id)
+  values (p_user_id, -p_amount, p_reason, p_stripe_event_id);
+
+  update public.credit_balances
+    set credits = greatest(0, credits - p_amount),
+        updated_at = now()
+    where user_id = p_user_id;
+
+  if not found then
+    insert into public.credit_balances (user_id, credits, updated_at)
+    values (p_user_id, 0, now());
+  end if;
+
+  return true;
+exception
+  when unique_violation then
+    return false;
+end;
+$$;
+
+revoke all on function public.revoke_credits_for_refund(uuid, int, text, text) from public, anon, authenticated;
+grant execute on function public.revoke_credits_for_refund(uuid, int, text, text) to service_role;
+
+-- Ledger append-only de verdade: nem o service_role consegue alterar/apagar
+-- uma linha, independente de RLS ou GRANT explícito — histórico financeiro
+-- nunca é reescrito, só cresce.
+create or replace function public.forbid_credit_ledger_mutation()
+returns trigger
+language plpgsql
+as $$
+begin
+  raise exception 'credit_ledger is append-only: % is not allowed', tg_op;
+end;
+$$;
+
+drop trigger if exists credit_ledger_no_update on public.credit_ledger;
+create trigger credit_ledger_no_update
+  before update on public.credit_ledger
+  for each row execute function public.forbid_credit_ledger_mutation();
+
+drop trigger if exists credit_ledger_no_delete on public.credit_ledger;
+create trigger credit_ledger_no_delete
+  before delete on public.credit_ledger
+  for each row execute function public.forbid_credit_ledger_mutation();
+
+-- ============================================================
+-- Idempotência de webhook — protege contra reentrega automática da Stripe
+-- (que pode chegar horas/dias depois, ou concorrente) processar o mesmo
+-- evento duas vezes. claim_webhook_event roda ANTES de qualquer mutação;
+-- finish_webhook_event marca o resultado no final.
+-- ============================================================
+create table if not exists public.stripe_webhook_events (
+  stripe_event_id text primary key,
+  type text not null,
+  event_created_at timestamptz,
+  received_at timestamptz not null default now(),
+  status text not null default 'processing' check (status in ('processing', 'processed', 'failed')),
+  attempts integer not null default 1,
+  internal_reference text,
+  error text
+);
+
+alter table public.stripe_webhook_events enable row level security;
+-- Sem nenhuma policy de select/insert/update pra anon/authenticated — só o
+-- service_role (que ignora RLS) mexe nessa tabela; é puramente interna do
+-- webhook, o usuário nunca precisa ler isso direto.
+
+create or replace function public.claim_webhook_event(
+  p_stripe_event_id text, p_type text, p_event_created_at timestamptz
+) returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_status text;
+begin
+  perform pg_advisory_xact_lock(hashtext(p_stripe_event_id));
+
+  select status into v_status from public.stripe_webhook_events
+    where stripe_event_id = p_stripe_event_id for update;
+
+  if found then
+    if v_status = 'processed' then return false; end if;
+    update public.stripe_webhook_events
+      set status = 'processing', attempts = attempts + 1, received_at = now()
+      where stripe_event_id = p_stripe_event_id;
+    return true;
+  end if;
+
+  insert into public.stripe_webhook_events (stripe_event_id, type, event_created_at, status)
+    values (p_stripe_event_id, p_type, p_event_created_at, 'processing');
+  return true;
+end;
+$$;
+
+create or replace function public.finish_webhook_event(
+  p_stripe_event_id text, p_status text, p_internal_reference text default null, p_error text default null
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_status not in ('processed', 'failed') then
+    raise exception 'invalid status for finish_webhook_event: %', p_status;
+  end if;
+  update public.stripe_webhook_events
+    set status = p_status, internal_reference = coalesce(p_internal_reference, internal_reference), error = p_error
+    where stripe_event_id = p_stripe_event_id;
+end;
+$$;
+
+revoke all on function public.claim_webhook_event(text, text, timestamptz) from public, anon, authenticated;
+revoke all on function public.finish_webhook_event(text, text, text, text) from public, anon, authenticated;
+grant execute on function public.claim_webhook_event(text, text, timestamptz) to service_role;
+grant execute on function public.finish_webhook_event(text, text, text, text) to service_role;
