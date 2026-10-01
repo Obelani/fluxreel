@@ -69,8 +69,8 @@ Gradiente padrão (botões, destaques, textos em destaque): `linear-gradient(90d
 ## Autenticação (Supabase)
 
 - Login com Google e e-mail/senha via Supabase Auth.
-- Google Cloud Console: projeto "fluxreel", OAuth Client tipo "Aplicativo da Web", origem autorizada = domínio canônico de produção (`https://www.fluxreel.com.br` — **com www**, é a variante que a Vercel serve direto; `fluxreel.com.br` sem www só redireciona 308 pra ela).
-- Supabase → Authentication → URL Configuration: Site URL = `https://www.fluxreel.com.br`, Redirect URLs cobrindo `https://www.fluxreel.com.br/**`. Qualquer webhook externo (ex.: Stripe) também precisa usar o domínio com www — o sem-www não é seguido por chamadas servidor-pra-servidor.
+- Google Cloud Console: projeto "fluxreel", OAuth Client tipo "Aplicativo da Web", origem autorizada = domínio canônico de produção (`https://www.fluxreel.app` — **com www**, é a variante que a Vercel serve direto; `fluxreel.app` sem www só redireciona 308 pra ela; o domínio antigo `www.fluxreel.com.br` segue ligado ao projeto durante a transição).
+- Supabase → Authentication → URL Configuration: Site URL = `https://www.fluxreel.app`, Redirect URLs cobrindo `https://www.fluxreel.app/**`. Qualquer webhook externo (ex.: Stripe) também precisa usar o domínio com www — o sem-www não é seguido por chamadas servidor-pra-servidor.
 - `REDIRECT_AFTER_LOGIN` em `auth.js` aponta pra `/create-series.html`.
 - `requireAuth()` (em `auth.js`) é a função que protege páginas — chame no topo de qualquer página nova que deva exigir login.
 

@@ -17,7 +17,7 @@ function getQstashClient() {
 async function publishNextStep(pathFromRoot, payload) {
   const origin = process.env.BASE_URL;
   if (!origin) {
-    throw new Error('BASE_URL precisa estar configurado (ex.: https://www.fluxreel.com.br) para o QStash saber pra onde entregar.');
+    throw new Error('BASE_URL precisa estar configurado (ex.: https://www.fluxreel.app) para o QStash saber pra onde entregar.');
   }
   const client = getQstashClient();
   await client.publishJSON({

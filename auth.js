@@ -54,7 +54,7 @@ function getSupabaseClient() {
 // Google conversa com a própria página do FluxReel (não redireciona pro
 // domínio do Supabase antes), e o ID token que ele devolve vai pro Supabase
 // via signInWithIdToken(). Resultado: a tela de escolher conta do Google
-// mostra "fluxreel.com.br", não "*.supabase.co".
+// mostra "fluxreel.app", não "*.supabase.co".
 // Se o GSI não conseguir mostrar nada (navegador bloqueando o prompt,
 // script não carregado, etc.) cai automaticamente no fluxo antigo
 // (signInWithOAuth, com redirect) — nunca deixa o usuário sem conseguir
