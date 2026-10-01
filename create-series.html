@@ -439,11 +439,18 @@ src="https://www.facebook.com/tr?id=178310472272473&ev=PageView&noscript=1"
 
   /* ---------- Modal de geração do vídeo (passos reais do pipeline,
      acompanhados via Supabase Realtime) ---------- */
-  .gen-preview { margin: 0 auto 24px; width: 140px; aspect-ratio: 9 / 16; border-radius: 16px; border: 1px solid var(--border-soft); background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
+  .gen-preview { margin: 0 auto 24px; width: 140px; aspect-ratio: 9 / 16; border-radius: 16px; border: 1px solid var(--border-soft); background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); animation: gen-preview-breathe 2.4s ease-in-out infinite; }
+  @keyframes gen-preview-breathe { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
   .gen-title { font-size: 20px; font-weight: 700; margin: 0; }
   .gen-sub { margin-top: 6px; font-size: 14px; color: var(--text-muted); }
   .gen-bar-wrap { margin-top: 24px; height: 6px; width: 100%; border-radius: 999px; background: rgba(255,255,255,0.1); overflow: hidden; }
-  .gen-bar { height: 100%; border-radius: 999px; background-image: linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); width: 4%; transition: width 0.4s ease; }
+  .gen-bar { position: relative; height: 100%; border-radius: 999px; background-image: linear-gradient(90deg, var(--brand-blue), #6A5CFF, var(--brand-cyan)); width: 4%; transition: width 0.4s ease; overflow: hidden; }
+  .gen-bar::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    width: 60%; animation: gen-bar-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes gen-bar-shimmer { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
   .gen-progress-row { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-faint); }
   .gen-progress-row .pct { font-weight: 600; color: #d4d4d8; }
   .gen-list { margin-top: 24px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
@@ -1469,11 +1476,16 @@ src="https://www.facebook.com/tr?id=178310472272473&ev=PageView&noscript=1"
     document.getElementById('gen-pct').textContent = info[1] + '%';
 
     var currentIndex = STATUS_ORDER.indexOf(status);
+    // "queued" (antes do roteiro começar) não tem etapa própria na lista —
+    // sem isso, nenhum item ficava "is-active" nesse meio-tempo e a tela
+    // parecia travada (sem nenhum pulse, sem nenhum destaque). Trata queued
+    // como "prestes a escrever o roteiro", já destacando a etapa 1.
+    var effectiveIndex = currentIndex <= 0 ? 1 : currentIndex;
     document.getElementById('gen-list').innerHTML = GEN_STEPS.map(function (step, i) {
       var stepIndex = STATUS_ORDER.indexOf(step.status);
-      var cls = currentIndex > stepIndex ? 'is-done' : (currentIndex === stepIndex ? 'is-active' : '');
-      var badge = currentIndex > stepIndex ? '✓' : String(i + 1);
-      var pulse = currentIndex === stepIndex ? '<span class="pulse"></span>' : '';
+      var cls = effectiveIndex > stepIndex ? 'is-done' : (effectiveIndex === stepIndex ? 'is-active' : '');
+      var badge = effectiveIndex > stepIndex ? '✓' : String(i + 1);
+      var pulse = effectiveIndex === stepIndex ? '<span class="pulse"></span>' : '';
       return '<div class="gen-item ' + cls + '"><span class="badge">' + badge + '</span><span class="label">' + step.label + '</span>' + pulse + '</div>';
     }).join('');
   }
