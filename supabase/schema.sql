@@ -335,3 +335,21 @@ revoke all on function public.claim_webhook_event(text, text, timestamptz) from 
 revoke all on function public.finish_webhook_event(text, text, text, text) from public, anon, authenticated;
 grant execute on function public.claim_webhook_event(text, text, timestamptz) to service_role;
 grant execute on function public.finish_webhook_event(text, text, text, text) to service_role;
+
+-- ============================================================
+-- Eventos do funil (painel admin) — hoje só "checkout_started", gravado em
+-- api/create-checkout-session.js. Os demais passos do funil (cadastro, série,
+-- vídeo, assinatura) o admin deriva das tabelas que já existem. Só o
+-- service_role mexe aqui (RLS ligada, sem policy pra anon/authenticated).
+-- ============================================================
+create table if not exists public.funnel_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  event text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists funnel_events_user_event_idx on public.funnel_events(user_id, event);
+
+alter table public.funnel_events enable row level security;

@@ -74,6 +74,18 @@ module.exports = async (req, res) => {
       subscription_data: { metadata: metadata },
     });
 
+    // Registro pro funil do painel admin — nunca pode atrapalhar o checkout
+    // (a tabela pode nem existir ainda, por isso o try/catch).
+    try {
+      await supabase.from('funnel_events').insert({
+        user_id: user.id,
+        event: 'checkout_started',
+        metadata: { plan_id: body.plan_id, billing_cycle: body.billing_cycle, quantity: quantity },
+      });
+    } catch (evErr) {
+      console.error('[create-checkout-session] Não foi possível registrar funnel_event:', evErr);
+    }
+
     res.status(200).json({ url: session.url });
   } catch (err) {
     console.error('[create-checkout-session] Falha inesperada:', err);

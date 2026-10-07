@@ -1,7 +1,8 @@
 {
   "rewrites": [
     { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/dashboard/:path*", "destination": "/dashboard.html" }
+    { "source": "/dashboard/:path*", "destination": "/dashboard.html" },
+    { "source": "/admin", "destination": "/admin.html" }
   ],
   "functions": {
     "api/pipeline/render.js": {
