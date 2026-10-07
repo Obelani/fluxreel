@@ -353,3 +353,11 @@ create table if not exists public.funnel_events (
 create index if not exists funnel_events_user_event_idx on public.funnel_events(user_id, event);
 
 alter table public.funnel_events enable row level security;
+-- O wizard (create-series.html) grava direto daqui, com a sessão do usuário,
+-- uma linha por etapa aberta — assim não precisa de uma function nova na
+-- Vercel (o plano Hobby está no limite de 12). Só o próprio usuário, só esse
+-- tipo de evento. Leitura continua restrita ao service_role (painel admin).
+drop policy if exists "insert own wizard_step events" on public.funnel_events;
+create policy "insert own wizard_step events" on public.funnel_events
+  for insert to authenticated
+  with check (auth.uid() = user_id and event = 'wizard_step');

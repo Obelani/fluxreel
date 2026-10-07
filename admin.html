@@ -141,8 +141,10 @@
       </section>
 
       <section id="view-rastreamento" hidden>
-        <div class="head"><div><h1>Rastreamento</h1><p class="sub">O caminho de cada e-mail cadastrado, do cadastro à assinatura. Quem só visitou o site sem se cadastrar aparece apenas no Google Analytics / Meta. “Foi p/ checkout” é registrado a partir da publicação desta versão (quem já assinou entra automaticamente nessa etapa).</p></div></div>
+        <div class="head"><div><h1>Rastreamento</h1><p class="sub">O caminho de cada e-mail cadastrado, do cadastro à assinatura. Wizard mostra até qual etapa do passo a passo de criar série o usuário chegou; Clicou em assinar é quando ele clica no botão da última etapa (a série é criada e o checkout abre em seguida). Quem só visitou o site sem se cadastrar aparece apenas no Google Analytics / Meta. “Foi p/ checkout” é registrado a partir da publicação desta versão (quem já assinou entra automaticamente nessa etapa).</p></div></div>
         <div class="tiles" id="t-tiles"></div>
+        <div class="group-title">Funil do wizard — quantos usuários chegaram em cada etapa</div>
+        <div class="tiles" id="t-wizard"></div>
         <div class="group-title">Por usuário</div>
         <div class="tools">
           <input type="search" id="t-search" placeholder="Buscar por e-mail…" />
@@ -160,9 +162,11 @@
 <script>
 (async function () {
   var STAGE_LABELS = {
-    cadastro: 'Cadastro', confirmado: 'E-mail confirmado', serie: 'Criou série', video: 'Gerou vídeo',
+    cadastro: 'Cadastro', confirmado: 'E-mail confirmado', wizard: 'Wizard', serie: 'Clicou em assinar', video: 'Gerou vídeo',
     pronto: 'Vídeo pronto', checkout: 'Foi p/ checkout', assinou: 'Assinou'
   };
+  var WIZARD_STEP_NAMES = ['Nicho', 'Voz', 'Música de fundo', 'Estilo visual', 'Estilo de legenda', 'Efeitos', 'Plano (paywall)'];
+  function wizardLabel(n) { return 'Etapa ' + n + ' — ' + (WIZARD_STEP_NAMES[n - 1] || ''); }
   var PLAN_LABELS = { inicial: 'Inicial', diario: 'Diário', pro: 'Pro' };
   var data = null;
 
@@ -252,34 +256,48 @@
     }).join('');
   }
 
+  function addOption(sel, value, text) {
+    var o = document.createElement('option');
+    o.value = value; o.textContent = text;
+    sel.appendChild(o);
+  }
+  function stopKey(u) { return u.stoppedAt === 'wizard' ? 'wizard:' + u.wizardStep : u.stoppedAt; }
+  function stopLabel(u) { return u.stoppedAt === 'wizard' ? wizardLabel(u.wizardStep) : (STAGE_LABELS[u.stoppedAt] || '—'); }
+
   function renderTracking() {
     var counts = data.metrics.funnelCounts;
     document.getElementById('t-tiles').innerHTML = data.stages.map(function (st) { return tile(STAGE_LABELS[st], counts[st] || 0); }).join('');
 
+    var reach = data.metrics.wizardReach || [];
+    document.getElementById('t-wizard').innerHTML = reach.map(function (c, i) { return tile(wizardLabel(i + 1), c); }).join('');
+
     var filter = document.getElementById('t-filter');
     if (filter.options.length === 1) {
       data.stages.forEach(function (st) {
-        var o = document.createElement('option');
-        o.value = st; o.textContent = 'Parou em: ' + STAGE_LABELS[st];
-        filter.appendChild(o);
+        if (st === 'wizard') {
+          for (var n = 1; n <= WIZARD_STEP_NAMES.length; n++) addOption(filter, 'wizard:' + n, 'Parou em: ' + wizardLabel(n));
+        } else {
+          addOption(filter, st, 'Parou em: ' + STAGE_LABELS[st]);
+        }
       });
     }
     var q = document.getElementById('t-search').value.trim().toLowerCase();
     var f = filter.value;
     var rows = data.users.filter(function (u) {
-      return (!q || (u.email || '').toLowerCase().indexOf(q) !== -1) && (!f || u.stoppedAt === f);
+      return (!q || (u.email || '').toLowerCase().indexOf(q) !== -1) && (!f || stopKey(u) === f);
     });
     if (!rows.length) { document.getElementById('t-list').innerHTML = '<div class="u-card empty">Nenhum usuário nesse filtro.</div>'; return; }
 
     document.getElementById('t-list').innerHTML = rows.map(function (u) {
       var chips = data.stages.map(function (st, i) {
         var at = u.stages[st];
-        var chip = '<div class="chip' + (at ? ' on' : '') + '"><b>' + esc(STAGE_LABELS[st]) + '</b><span>' + esc(at ? fmtDate(at) : '—') + '</span></div>';
+        var name = st === 'wizard' && at ? 'Wizard · etapa ' + u.wizardStep + '/' + WIZARD_STEP_NAMES.length : STAGE_LABELS[st];
+        var chip = '<div class="chip' + (at ? ' on' : '') + '"><b>' + esc(name) + '</b><span>' + esc(at ? fmtDate(at) : '—') + '</span></div>';
         var link = i < data.stages.length - 1 ? '<div class="link' + (at && u.stages[data.stages[i + 1]] ? ' on' : '') + '"></div>' : '';
         return chip + link;
       }).join('');
       var done = u.stoppedAt === 'assinou';
-      var badge = '<span class="stopped' + (done ? ' done' : '') + '">' + (done ? 'Assinante' : 'Parou em: ' + esc(STAGE_LABELS[u.stoppedAt] || '—')) + '</span>';
+      var badge = '<span class="stopped' + (done ? ' done' : '') + '">' + (done ? 'Assinante' : 'Parou em: ' + esc(stopLabel(u))) + '</span>';
       var meta = esc(u.provider) + ' · último acesso ' + esc(fmtDate(u.lastSignInAt)) + ' · ' + esc(u.videosReady) + '/' + esc(u.videosTotal) + ' vídeos prontos' + (u.videosFailed ? ' · ' + esc(u.videosFailed) + ' com falha' : '');
       return '<div class="u-card"><div class="u-top"><div><div class="u-email">' + esc(u.email) + '</div><div class="u-meta">' + meta + '</div></div>' + badge + '</div><div class="chips">' + chips + '</div></div>';
     }).join('');

@@ -41,7 +41,8 @@ function earliest(map, key, iso) {
 // Etapas do funil, na ordem. Todas derivadas de dados que o app já grava,
 // exceto "checkout", que vem de funnel_events (gravado em
 // create-checkout-session.js).
-const STAGES = ['cadastro', 'confirmado', 'serie', 'video', 'pronto', 'checkout', 'assinou'];
+const STAGES = ['cadastro', 'confirmado', 'wizard', 'serie', 'video', 'pronto', 'checkout', 'assinou'];
+const WIZARD_TOTAL_STEPS = 7;
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -76,12 +77,12 @@ module.exports = async (req, res) => {
     // funnel_events pode ainda não existir (migration manual) — nesse caso o
     // passo "checkout" cai no fallback (quem assinou obviamente passou por ele).
     let eventRows = [];
-    const { data: ev, error: evError } = await supabase.from('funnel_events').select('user_id, event, created_at').limit(20000);
+    const { data: ev, error: evError } = await supabase.from('funnel_events').select('user_id, event, metadata, created_at').limit(20000);
     if (!evError && ev) eventRows = ev;
 
     const per = {};
     function bucket(id) {
-      if (!per[id]) per[id] = { seriesCount: 0, videosTotal: 0, videosReady: 0, failed: 0, t: {} };
+      if (!per[id]) per[id] = { seriesCount: 0, videosTotal: 0, videosReady: 0, failed: 0, wizardStep: 0, t: {} };
       return per[id];
     }
 
@@ -99,6 +100,12 @@ module.exports = async (req, res) => {
     });
     eventRows.forEach(function (e) {
       if (e.event === 'checkout_started') earliest(bucket(e.user_id).t, 'checkout', e.created_at);
+      if (e.event === 'wizard_step') {
+        const b = bucket(e.user_id);
+        const step = e.metadata && parseInt(e.metadata.step, 10);
+        if (step >= 1 && step <= WIZARD_TOTAL_STEPS && step > b.wizardStep) b.wizardStep = step;
+        earliest(b.t, 'wizard', e.created_at);
+      }
     });
 
     const creditsByUser = {};
@@ -108,13 +115,17 @@ module.exports = async (req, res) => {
 
     const now = Date.now();
     const users = authUsers.map(function (u) {
-      const b = per[u.id] || { seriesCount: 0, videosTotal: 0, videosReady: 0, failed: 0, t: {} };
+      const b = per[u.id] || { seriesCount: 0, videosTotal: 0, videosReady: 0, failed: 0, wizardStep: 0, t: {} };
       const sub = subByUser[u.id] || null;
       const subActive = !!sub && (sub.status === 'active' || sub.status === 'trialing');
 
       const t = Object.assign({}, b.t);
       t.cadastro = u.created_at;
       t.confirmado = u.email_confirmed_at || null;
+      // Quem já criou série obviamente passou por todo o wizard (cobre quem
+      // se cadastrou antes de o registro de etapas existir).
+      let wizardStep = b.wizardStep;
+      if (!wizardStep && t.serie) { wizardStep = WIZARD_TOTAL_STEPS; t.wizard = t.serie; }
       if (sub) {
         t.assinou = sub.created_at;
         if (!t.checkout) t.checkout = sub.created_at; // quem assinou passou pelo checkout
@@ -136,6 +147,7 @@ module.exports = async (req, res) => {
         videosTotal: b.videosTotal,
         videosReady: b.videosReady,
         videosFailed: b.failed,
+        wizardStep: wizardStep,
         stages: t,
         stoppedAt: stoppedAt,
       };
@@ -156,6 +168,12 @@ module.exports = async (req, res) => {
     STAGES.forEach(function (st) {
       funnelCounts[st] = users.filter(function (u) { return !!u.stages[st]; }).length;
     });
+
+    // Quantos usuários chegaram (no mínimo) até cada etapa do wizard.
+    const wizardReach = [];
+    for (let n = 1; n <= WIZARD_TOTAL_STEPS; n++) {
+      wizardReach.push(users.filter(function (u) { return u.wizardStep >= n; }).length);
+    }
 
     res.status(200).json({
       generatedAt: new Date(now).toISOString(),
@@ -184,6 +202,7 @@ module.exports = async (req, res) => {
         videosFailed: videoRows.filter(function (v) { return v.status === 'failed'; }).length,
         videosTotal: videoRows.length,
         funnelCounts: funnelCounts,
+        wizardReach: wizardReach,
       },
       users: users,
     });
