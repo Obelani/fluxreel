@@ -11,11 +11,11 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '178310472272473');
+fbq('init', '1783104722724738');
 fbq('track', 'PageView');
 </script>
 <noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=178310472272473&ev=PageView&noscript=1"
+src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
 <meta charset="utf-8" />
@@ -483,7 +483,7 @@ src="https://www.facebook.com/tr?id=178310472272473&ev=PageView&noscript=1"
         <div class="name" id="user-name">—</div>
         <div class="email" id="user-email">—</div>
       </div>
-      <a href="/dashboard" class="btn btn-outline btn-sair">Dashboard</a>
+      <a href="/dashboard" class="btn btn-outline btn-sair" id="btn-dashboard" style="display:none;">Dashboard</a>
       <button type="button" class="btn btn-outline btn-sair" id="btn-sair">Sair</button>
     </div>
   </div>
@@ -786,6 +786,17 @@ src="https://www.facebook.com/tr?id=178310472272473&ev=PageView&noscript=1"
   }
 
   if (authGate) authGate.classList.add('hidden');
+
+  // O botão "Dashboard" do header só aparece pra quem tem assinatura ativa.
+  // Quem ainda não assinou (primeiro acesso, fluxo de teste) não tem nada
+  // pra ver lá, então fica escondido — e por padrão também se a checagem falhar.
+  (async function () {
+    try {
+      var res = await fetch('/api/subscription-status', { headers: { 'Authorization': 'Bearer ' + authSession.access_token } });
+      var info = await res.json().catch(function () { return {}; });
+      if (res.ok && info.subscription) document.getElementById('btn-dashboard').style.display = '';
+    } catch (e) { /* mantém escondido */ }
+  })();
 
   // ===================== DADOS =====================
   // [id, emoji, label, descrição] — a descrição é o que de fato vira o
