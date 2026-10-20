@@ -121,6 +121,14 @@ async function dispatch(supabase, event, data) {
     case 'subscription_renewed':
       await handlePaid(supabase, event, data);
       break;
+    case 'refund_requested':
+      // O comprador pediu reembolso: a intenção já está feita, então os
+      // créditos daquele pagamento são retirados NA HORA (senão dá pra gastar
+      // tudo gerando vídeo durante a janela de reembolso). Usa a mesma chave
+      // do evento `refund` (por pedido), então a efetivação depois não
+      // reverte uma segunda vez.
+      await handleRevoke(supabase, data, 'refund', 'Reembolso solicitado (Cakto) — créditos retidos.');
+      break;
     case 'refund':
       await handleRevoke(supabase, data, 'refund', 'Reembolso do pagamento (Cakto).');
       break;
