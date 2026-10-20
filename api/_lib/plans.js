@@ -34,4 +34,22 @@ function getCreditsForCycle(planId, billingCycle, quantity) {
   return monthly * multiplier * (quantity || 1);
 }
 
-module.exports = { PLAN_MONTHLY_CREDITS, getPriceId, getCreditsForCycle };
+// Ofertas do produto "Fluxreel" na Cakto (id da oferta = final do link
+// https://pay.cakto.com.br/<id>). O webhook da Cakto (api/cakto-webhook.js)
+// usa isso pra saber qual plano/ciclo foi comprado — se criar/trocar uma
+// oferta lá, atualizar aqui e nos dois HTMLs (CAKTO_OFFERS em
+// create-series.html e dashboard.html).
+const CAKTO_OFFERS = {
+  iskm4yt: { planId: 'inicial', billingCycle: 'monthly' },
+  madd2ag: { planId: 'inicial', billingCycle: 'annual' },
+  zzzcexo: { planId: 'diario', billingCycle: 'monthly' },
+  '382wt8b': { planId: 'diario', billingCycle: 'annual' },
+  '3f8hyrc': { planId: 'pro', billingCycle: 'monthly' },
+  fabfdtn: { planId: 'pro', billingCycle: 'annual' },
+};
+
+function getCaktoOffer(offerId) {
+  return (offerId && CAKTO_OFFERS[offerId]) || null;
+}
+
+module.exports = { PLAN_MONTHLY_CREDITS, CAKTO_OFFERS, getCaktoOffer, getPriceId, getCreditsForCycle };

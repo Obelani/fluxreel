@@ -39,8 +39,8 @@ function earliest(map, key, iso) {
 }
 
 // Etapas do funil, na ordem. Todas derivadas de dados que o app já grava,
-// exceto "checkout", que vem de funnel_events (gravado em
-// create-checkout-session.js).
+// exceto "checkout", que vem de funnel_events (gravado pelo front em
+// goToCaktoCheckout, create-series.html / dashboard.html).
 const STAGES = ['cadastro', 'confirmado', 'wizard', 'serie', 'video', 'pronto', 'checkout', 'assinou'];
 const WIZARD_TOTAL_STEPS = 7;
 

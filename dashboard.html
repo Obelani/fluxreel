@@ -248,6 +248,8 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
   .qty-box { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-radius: 14px; border: 1px solid var(--border-soft); background: var(--surface-1); padding: 16px 20px; }
   .qty-box .qty-title { font-size: 14px; font-weight: 500; color: #e4e4e7; }
   .qty-box .qty-desc { margin-top: 2px; font-size: 12px; color: var(--text-faint); }
+  /* Quantidade de séries desativada: as ofertas da Cakto têm preço fixo (1 assinatura = 1 plano). */
+  .qty-box { display: none !important; }
   .qty-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .qty-btn { height: 32px; width: 32px; border-radius: 999px; border: 1px solid var(--border-soft); background: transparent; color: #d4d4d8; font-size: 16px; display: flex; align-items: center; justify-content: center; }
   .qty-btn:hover { background: rgba(255,255,255,0.05); }
@@ -1100,12 +1102,10 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
       openPaywall();
       return;
     }
-    try {
-      var result = await apiPost('/api/create-portal-session', {});
-      window.location.href = result.url;
-    } catch (e) {
-      showToast(e.message || 'Não foi possível abrir o painel de assinatura.');
-    }
+    // Assinatura é cobrada pela Cakto: o comprador gerencia/cancela na página
+    // de autoatendimento dela, entrando com o e-mail usado na compra.
+    window.open('https://assinatura.cakto.com.br/', '_blank', 'noopener');
+    showToast('Entre com o e-mail usado na compra para gerenciar ou cancelar.');
   });
 
   // ===================== MODAL DE PLANOS =====================
@@ -1115,6 +1115,58 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
     { id: 'pro', name: 'Pro', freq: '2 vídeos por dia', oldPrice: 69.90, price: 49.90, perVideo: 0.83, tag: 'Melhor para crescer' },
   ];
   var payState = { billingCycle: 'monthly', plan: 'diario', quantity: 1 };
+
+  // ===================== PAGAMENTO (Cakto) =====================
+  // Cada plano/ciclo é uma oferta do produto "Fluxreel" na Cakto; o checkout
+  // é o link direto https://pay.cakto.com.br/<oferta>. O token ?callback=
+  // leva o id do usuário e volta no webhook (api/cakto-webhook.js), que é
+  // quem confirma a compra e libera os créditos. Se mudar/criar oferta lá,
+  // atualizar aqui e em api/_lib/plans.js (CAKTO_OFFERS).
+  var CAKTO_OFFERS = {
+    'inicial:monthly': 'iskm4yt', 'inicial:annual': 'madd2ag',
+    'diario:monthly': 'zzzcexo', 'diario:annual': '382wt8b',
+    'pro:monthly': '3f8hyrc', 'pro:annual': 'fabfdtn'
+  };
+
+  async function goToCaktoCheckout(planId, cycle) {
+    var offerId = CAKTO_OFFERS[planId + ':' + cycle];
+    if (!offerId) throw new Error('Plano indisponível no momento.');
+    var plan = PLANS.filter(function (p) { return p.id === planId; })[0];
+    var annual = cycle === 'annual';
+    // Valor realmente cobrado: mensal = preço do plano; anual = 12 meses com 25% off.
+    var value = annual ? Math.round(plan.price * 12 * 0.75 * 100) / 100 : plan.price;
+
+    // Pixel do Meta: quem sai da escolha de planos e vai pro checkout.
+    try {
+      if (typeof fbq === 'function') {
+        fbq('track', 'AddToCart', {
+          value: value,
+          currency: 'BRL',
+          content_name: 'FluxReel ' + plan.name + ' ' + (annual ? 'Anual' : 'Mensal'),
+          content_ids: [offerId],
+          content_type: 'product'
+        });
+      }
+    } catch (e) { /* nunca atrapalha o checkout */ }
+
+    // Registro pro funil do painel admin ("Foi p/ checkout").
+    var logged = Promise.resolve();
+    try {
+      logged = Promise.resolve(getSupabaseClient().from('funnel_events').insert({
+        user_id: authSession.user.id,
+        event: 'checkout_started',
+        metadata: { plan_id: planId, billing_cycle: cycle, offer_id: offerId }
+      })).then(function () {}, function () {});
+    } catch (e) { /* ignora */ }
+
+    // Dá tempo do pixel e do registro saírem antes de trocar de página.
+    await Promise.all([
+      Promise.race([logged, new Promise(function (r) { setTimeout(r, 700); })]),
+      new Promise(function (r) { setTimeout(r, 350); })
+    ]);
+
+    window.location.href = 'https://pay.cakto.com.br/' + offerId + '?callback=' + encodeURIComponent(authSession.user.id);
+  }
 
   function fmtBRL(n) { return 'R$ ' + n.toFixed(2).replace('.', ','); }
 
@@ -1203,13 +1255,7 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
     var originalLabel = btn.textContent;
     btn.textContent = 'Preparando pagamento…';
     try {
-      var checkout = await apiPost('/api/create-checkout-session', {
-        plan_id: payState.plan,
-        billing_cycle: payState.billingCycle,
-        quantity: payState.quantity,
-        return_path: '/dashboard',
-      });
-      window.location.href = checkout.url;
+      await goToCaktoCheckout(payState.plan, payState.billingCycle);
     } catch (e) {
       console.error('[FluxReel] Erro ao iniciar pagamento:', e);
       showToast(e.message || 'Não foi possível iniciar o pagamento.');
@@ -1222,9 +1268,16 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
   // automaticamente aqui — o usuário escolhe qual série gerar na aba Séries).
   (function handleCheckoutReturn() {
     var params = new URLSearchParams(window.location.search);
-    if (params.get('success') === '1') {
-      showToast('✅ Pagamento confirmado! Seus créditos já foram liberados.');
+    if (params.get('paid') === '1' || params.get('success') === '1') {
+      showToast('✅ Pagamento recebido! Seus créditos aparecem em instantes.');
       window.history.replaceState({}, '', window.location.pathname);
+      // O crédito chega pelo webhook da Cakto (alguns segundos): atualiza o saldo algumas vezes.
+      var refreshTries = 0;
+      var refreshTimer = setInterval(function () {
+        refreshTries++;
+        loadSummary();
+        if (refreshTries >= 8) clearInterval(refreshTimer);
+      }, 4000);
     } else if (params.get('canceled') === '1') {
       showToast('Pagamento cancelado — nada foi cobrado.');
       window.history.replaceState({}, '', window.location.pathname);

@@ -388,6 +388,8 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
   }
   .qty-box .qty-title { font-size: 14px; font-weight: 500; color: #e4e4e7; }
   .qty-box .qty-desc { margin-top: 2px; font-size: 12px; color: var(--text-faint); }
+  /* Quantidade de séries desativada: as ofertas da Cakto têm preço fixo (1 assinatura = 1 plano). */
+  .qty-box { display: none !important; }
   .qty-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .qty-btn {
     height: 32px; width: 32px; border-radius: 999px; border: 1px solid var(--border-soft); background: transparent;
@@ -658,7 +660,7 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
   <div class="modal-card">
     <button type="button" class="modal-close" id="modal-close" aria-label="Fechar">✕</button>
     <h2>Desbloqueie sua série</h2>
-    <p>Escolha a frequência e quantas séries simultâneas você quer rodar — cada série adicional soma ao seu limite de vídeos (e ao valor mensal).</p>
+    <p>Escolha o plano e a frequência de cobrança. O pagamento é feito em um checkout seguro da Cakto.</p>
 
     <div class="modal-grid">
       <div>
@@ -1335,7 +1337,7 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
       var currentPlanName = (PLANS.filter(function (p) { return p.id === sub.plan_id; })[0] || {}).name || sub.plan_id;
       btn.textContent = 'Trocar para este plano';
       btn.disabled = false;
-      note.textContent = 'Isso vai substituir sua assinatura atual (' + currentPlanName + '). Créditos que sobrarem continuam valendo.';
+      note.textContent = 'Você vai assinar o novo plano no checkout da Cakto. Cancele o plano atual (' + currentPlanName + ') em assinatura.cakto.com.br para não ser cobrado duas vezes. Créditos que sobrarem continuam valendo.';
       note.style.display = 'block';
     }
   }
@@ -1409,7 +1411,57 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
     startCheckout(this);
   });
 
-  // ===================== PAGAMENTO (Stripe) =====================
+  // ===================== PAGAMENTO (Cakto) =====================
+  // Cada plano/ciclo é uma oferta do produto "Fluxreel" na Cakto; o checkout
+  // é o link direto https://pay.cakto.com.br/<oferta>. O token ?callback=
+  // leva o id do usuário e volta no webhook (api/cakto-webhook.js), que é
+  // quem confirma a compra e libera os créditos. Se mudar/criar oferta lá,
+  // atualizar aqui e em api/_lib/plans.js (CAKTO_OFFERS).
+  var CAKTO_OFFERS = {
+    'inicial:monthly': 'iskm4yt', 'inicial:annual': 'madd2ag',
+    'diario:monthly': 'zzzcexo', 'diario:annual': '382wt8b',
+    'pro:monthly': '3f8hyrc', 'pro:annual': 'fabfdtn'
+  };
+
+  async function goToCaktoCheckout(planId, cycle) {
+    var offerId = CAKTO_OFFERS[planId + ':' + cycle];
+    if (!offerId) throw new Error('Plano indisponível no momento.');
+    var plan = PLANS.filter(function (p) { return p.id === planId; })[0];
+    var annual = cycle === 'annual';
+    // Valor realmente cobrado: mensal = preço do plano; anual = 12 meses com 25% off.
+    var value = annual ? Math.round(plan.price * 12 * 0.75 * 100) / 100 : plan.price;
+
+    // Pixel do Meta: quem sai da escolha de planos e vai pro checkout.
+    try {
+      if (typeof fbq === 'function') {
+        fbq('track', 'AddToCart', {
+          value: value,
+          currency: 'BRL',
+          content_name: 'FluxReel ' + plan.name + ' ' + (annual ? 'Anual' : 'Mensal'),
+          content_ids: [offerId],
+          content_type: 'product'
+        });
+      }
+    } catch (e) { /* nunca atrapalha o checkout */ }
+
+    // Registro pro funil do painel admin ("Foi p/ checkout").
+    var logged = Promise.resolve();
+    try {
+      logged = Promise.resolve(getSupabaseClient().from('funnel_events').insert({
+        user_id: authSession.user.id,
+        event: 'checkout_started',
+        metadata: { plan_id: planId, billing_cycle: cycle, offer_id: offerId }
+      })).then(function () {}, function () {});
+    } catch (e) { /* ignora */ }
+
+    // Dá tempo do pixel e do registro saírem antes de trocar de página.
+    await Promise.all([
+      Promise.race([logged, new Promise(function (r) { setTimeout(r, 700); })]),
+      new Promise(function (r) { setTimeout(r, 350); })
+    ]);
+
+    window.location.href = 'https://pay.cakto.com.br/' + offerId + '?callback=' + encodeURIComponent(authSession.user.id);
+  }
   async function apiPost(path, body) {
     var res = await fetch(path, {
       method: 'POST',
@@ -1452,13 +1504,7 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
         hook: state.hook,
         duration: state.duration,
       });
-      var checkout = await apiPost('/api/create-checkout-session', {
-        plan_id: state.plan,
-        billing_cycle: state.billingCycle,
-        quantity: state.quantity,
-        series_id: series.series_id,
-      });
-      window.location.href = checkout.url;
+      await goToCaktoCheckout(state.plan, state.billingCycle);
     } catch (e) {
       console.error('[FluxReel] Erro ao iniciar pagamento:', e);
       showToast(e.message || 'Não foi possível iniciar o pagamento.');
@@ -1576,13 +1622,54 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
     }
   }
 
-  // Volta do Stripe Checkout: ?success=1 (pagamento confirmado) ou ?canceled=1.
+  // Volta do checkout da Cakto: a Página de Obrigado do produto (configurada
+  // no painel da Cakto) aponta pra /create-series.html?success=1. Quem confirma
+  // o pagamento e libera o crédito é o webhook (alguns segundos depois), então
+  // aqui esperamos o saldo aparecer antes de gerar o primeiro vídeo.
+  async function handlePaidReturn(seriesIdFromUrl) {
+    var client = getSupabaseClient();
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function goDashboard() { window.location.href = '/dashboard?paid=1'; }
+    try {
+      var seriesId = seriesIdFromUrl;
+      if (!seriesId) {
+        var latest = await client.from('series').select('id').order('created_at', { ascending: false }).limit(1);
+        seriesId = latest.data && latest.data[0] && latest.data[0].id;
+      }
+      // Só gera sozinho o primeiro vídeo de uma série que ainda não tem nenhum
+      // (assinante que só trocou de plano vai pro painel, sem gastar crédito).
+      var hasVideo = true;
+      if (seriesId) {
+        var vids = await client.from('videos').select('id').eq('series_id', seriesId).limit(1);
+        hasVideo = !!(vids.data && vids.data.length);
+      }
+      if (!seriesId || hasVideo) { goDashboard(); return; }
+
+      showGenerationProgress('queued');
+      document.getElementById('generation-status-label').textContent = 'Confirmando seu pagamento…';
+      var credits = 0;
+      for (var i = 0; i < 45; i++) {
+        var bal = await client.from('credit_balances').select('credits').maybeSingle();
+        credits = (bal.data && bal.data.credits) || 0;
+        if (credits > 0) break;
+        await sleep(2000);
+      }
+      if (credits > 0) {
+        showToast('✅ Pagamento confirmado! Seus créditos já foram liberados.');
+        startVideoGeneration(seriesId);
+      } else {
+        goDashboard();
+      }
+    } catch (e) {
+      console.error('[FluxReel] Erro ao confirmar o pagamento:', e);
+      goDashboard();
+    }
+  }
+
   (function handleCheckoutReturn() {
     var params = new URLSearchParams(window.location.search);
     if (params.get('success') === '1') {
-      showToast('✅ Pagamento confirmado! Seus créditos já foram liberados.');
-      var seriesId = params.get('series_id');
-      if (seriesId) startVideoGeneration(seriesId);
+      handlePaidReturn(params.get('series_id'));
     } else if (params.get('canceled') === '1') {
       showToast('Pagamento cancelado — nada foi cobrado.');
     }

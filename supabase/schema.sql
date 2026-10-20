@@ -361,3 +361,23 @@ drop policy if exists "insert own wizard_step events" on public.funnel_events;
 create policy "insert own wizard_step events" on public.funnel_events
   for insert to authenticated
   with check (auth.uid() = user_id and event = 'wizard_step');
+-- ============================================================
+-- Cakto como gateway de pagamento (substitui o checkout da Stripe).
+-- A tabela subscriptions passa a aceitar assinaturas da Cakto: os ids da
+-- Stripe viram opcionais, e `provider` + `external_subscription_id` dizem
+-- de onde a assinatura veio (webhook em api/cakto-webhook.js).
+-- ============================================================
+alter table public.subscriptions alter column stripe_customer_id drop not null;
+alter table public.subscriptions alter column stripe_subscription_id drop not null;
+alter table public.subscriptions add column if not exists provider text not null default 'stripe';
+alter table public.subscriptions add column if not exists external_subscription_id text;
+create unique index if not exists subscriptions_external_subscription_idx
+  on public.subscriptions(external_subscription_id) where external_subscription_id is not null;
+
+-- O front agora também grava "checkout_started" (ao ir pro checkout da Cakto);
+-- antes isso era gravado pela function da Stripe. Substitui a policy anterior.
+drop policy if exists "insert own wizard_step events" on public.funnel_events;
+drop policy if exists "insert own funnel events" on public.funnel_events;
+create policy "insert own funnel events" on public.funnel_events
+  for insert to authenticated
+  with check (auth.uid() = user_id and event in ('wizard_step', 'checkout_started'));
