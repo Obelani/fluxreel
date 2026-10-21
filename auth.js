@@ -143,7 +143,7 @@ async function signUpWithEmail(nome, email, senha, redirectPath) {
     email: email,
     password: senha,
     options: {
-      data: { full_name: nome },
+      data: { full_name: nome, attribution: (window.FluxAttribution && window.FluxAttribution.get()) || undefined },
       emailRedirectTo: window.location.origin + (redirectPath || REDIRECT_AFTER_LOGIN),
     },
   });

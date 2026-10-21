@@ -1,23 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full">
 <head>
-<!-- Meta Pixel Code -->
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1783104722724738');
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Meta Pixel Code -->
+<script src="/attribution.js"></script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Criar nova série — FluxReel</title>
@@ -466,6 +450,11 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
   .gen-item .pulse { margin-left: auto; width: 6px; height: 6px; border-radius: 999px; background: var(--brand-cyan); animation: pulse-dot 1.2s ease-in-out infinite; }
   @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 </style>
+<script>
+(function(s,e,n,t,i){s[n]=s[n]||function(){(s[n].q=s[n].q||[]).push(arguments)};
+var js=e.createElement('script');js.async=1;js.src=t+'?tid='+i;
+e.head.appendChild(js)})(window,document,'sentinel','https://track.fluxreel.app/api/t/tracker.js','7516c398-31c7-4be4-8f02-70f8de1892ac');
+</script>
 </head>
 <body>
 
@@ -769,6 +758,10 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
     window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname);
     return;
   }
+  // Guarda a origem (UTMs) no cadastro do usuário, pra não se perder se ele
+  // confirmar o e-mail ou voltar por outro navegador/aparelho.
+  if (window.FluxAttribution) window.FluxAttribution.persistToUser(getSupabaseClient(), authSession.user);
+
   var authGate = document.getElementById('auth-gate');
 
   // Quem já tem série cai direto no painel, em vez de refazer o wizard toda
@@ -1445,12 +1438,15 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
     } catch (e) { /* nunca atrapalha o checkout */ }
 
     // Registro pro funil do painel admin ("Foi p/ checkout").
+    // Origem do visitante (UTMs do anúncio): vai no link do checkout pra Cakto
+    // registrar de onde veio cada venda, e também no evento do funil.
+    var attr = (window.FluxAttribution && window.FluxAttribution.resolve(authSession.user)) || {};
     var logged = Promise.resolve();
     try {
       logged = Promise.resolve(getSupabaseClient().from('funnel_events').insert({
         user_id: authSession.user.id,
         event: 'checkout_started',
-        metadata: { plan_id: planId, billing_cycle: cycle, offer_id: offerId }
+        metadata: { plan_id: planId, billing_cycle: cycle, offer_id: offerId, attribution: attr }
       })).then(function () {}, function () {});
     } catch (e) { /* ignora */ }
 
@@ -1460,7 +1456,24 @@ src="https://www.facebook.com/tr?id=1783104722724738&ev=PageView&noscript=1"
       new Promise(function (r) { setTimeout(r, 350); })
     ]);
 
-    window.location.href = 'https://pay.cakto.com.br/' + offerId + '?callback=' + encodeURIComponent(authSession.user.id);
+    var checkoutUrl = 'https://pay.cakto.com.br/' + offerId + '?callback=' + encodeURIComponent(authSession.user.id) +
+      (window.FluxAttribution ? window.FluxAttribution.toQuery(attr) : '');
+
+    // Vai pro checkout por um clique num <a>: o tracker avançado (track.fluxreel.app)
+    // escuta cliques em links de checkout, acrescenta o marcador da sessão
+    // (utm_term=stl_...) e dispara o InitiateCheckout — em qualquer navegador,
+    // inclusive os embutidos do Instagram/Facebook. Sem o tracker (bloqueado,
+    // DNT) o clique navega normalmente pro mesmo link.
+    try {
+      var go = document.createElement('a');
+      go.href = checkoutUrl;
+      go.setAttribute('data-sentinel-checkout', '');
+      go.style.display = 'none';
+      document.body.appendChild(go);
+      go.click();
+    } catch (e) {
+      window.location.href = checkoutUrl;
+    }
   }
   async function apiPost(path, body) {
     var res = await fetch(path, {

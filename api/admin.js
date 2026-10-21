@@ -99,7 +99,11 @@ module.exports = async (req, res) => {
       if (v.status === 'failed') b.failed++;
     });
     eventRows.forEach(function (e) {
-      if (e.event === 'checkout_started') earliest(bucket(e.user_id).t, 'checkout', e.created_at);
+      if (e.event === 'checkout_started') {
+        earliest(bucket(e.user_id).t, 'checkout', e.created_at);
+        const a = e.metadata && e.metadata.attribution;
+        if (a && Object.keys(a).length) bucket(e.user_id).attrFromCheckout = a;
+      }
       if (e.event === 'wizard_step') {
         const b = bucket(e.user_id);
         const step = e.metadata && parseInt(e.metadata.step, 10);
@@ -148,6 +152,8 @@ module.exports = async (req, res) => {
         videosReady: b.videosReady,
         videosFailed: b.failed,
         wizardStep: wizardStep,
+        // Origem do anúncio (UTMs): do cadastro, ou do clique no checkout.
+        attribution: (u.user_metadata && u.user_metadata.attribution) || b.attrFromCheckout || null,
         stages: t,
         stoppedAt: stoppedAt,
       };
