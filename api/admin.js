@@ -44,6 +44,73 @@ function earliest(map, key, iso) {
 const STAGES = ['cadastro', 'confirmado', 'wizard', 'serie', 'video', 'pronto', 'checkout', 'assinou'];
 const WIZARD_TOTAL_STEPS = 7;
 
+// ---- Saldos das APIs que geram o material do lead -------------------------
+// Só ElevenLabs e fal.ai têm consulta de saldo por API. Anthropic, Groq e
+// QStash NÃO expõem saldo (só pelo console de cada um), então viram atalhos.
+async function fetchTimeout(url, opts) {
+  const ac = new AbortController();
+  const t = setTimeout(function () { ac.abort(); }, 7000);
+  try { return await fetch(url, Object.assign({}, opts, { signal: ac.signal })); } finally { clearTimeout(t); }
+}
+
+async function elevenLabsBalance() {
+  const base = { id: 'elevenlabs', name: 'ElevenLabs', purpose: 'Narração', consoleUrl: 'https://elevenlabs.io/app/subscription' };
+  const key = process.env.ELEVENLABS_API_KEY;
+  if (!key) return Object.assign(base, { ok: false, reason: 'Chave ELEVENLABS_API_KEY não configurada.' });
+  try {
+    const r = await fetchTimeout('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': key } });
+    if (r.status === 401 || r.status === 403) {
+      return Object.assign(base, { ok: false, reason: 'A chave não pode ler a assinatura. Em elevenlabs.io > API Keys, edite a chave e ative a permissão "User" (leitura).' });
+    }
+    if (!r.ok) return Object.assign(base, { ok: false, reason: 'ElevenLabs respondeu ' + r.status + '.' });
+    const j = await r.json();
+    const used = Number(j.character_count) || 0;
+    const limit = Number(j.character_limit) || 0;
+    return Object.assign(base, {
+      ok: true,
+      unit: 'caracteres',
+      used: used,
+      limit: limit,
+      remaining: Math.max(0, limit - used),
+      resetAt: j.next_character_count_reset_unix ? new Date(j.next_character_count_reset_unix * 1000).toISOString() : null,
+      plan: j.tier || null,
+    });
+  } catch (err) {
+    return Object.assign(base, { ok: false, reason: 'Falha ao consultar: ' + (err.name === 'AbortError' ? 'tempo esgotado' : err.message) });
+  }
+}
+
+async function falBalance() {
+  const base = { id: 'fal', name: 'fal.ai', purpose: 'Imagens', consoleUrl: 'https://fal.ai/dashboard/usage-billing/credits' };
+  // A consulta de billing da fal costuma exigir uma chave com escopo ADMIN.
+  const key = process.env.FAL_ADMIN_KEY || process.env.FAL_KEY;
+  if (!key) return Object.assign(base, { ok: false, reason: 'Chave FAL_KEY não configurada.' });
+  try {
+    const r = await fetchTimeout('https://api.fal.ai/v1/account/billing?expand=credits', { headers: { Authorization: 'Key ' + key } });
+    if (r.status === 401 || r.status === 403) {
+      return Object.assign(base, { ok: false, reason: 'A chave atual não tem acesso ao billing. Crie uma chave com escopo ADMIN em fal.ai/dashboard/keys e salve na Vercel como FAL_ADMIN_KEY.' });
+    }
+    if (!r.ok) return Object.assign(base, { ok: false, reason: 'fal.ai respondeu ' + r.status + '.' });
+    const j = await r.json();
+    const c = j && j.credits;
+    if (!c || c.current_balance == null) return Object.assign(base, { ok: false, reason: 'Resposta sem o campo de saldo.' });
+    return Object.assign(base, { ok: true, unit: 'saldo', balance: Number(c.current_balance), currency: c.currency || 'USD' });
+  } catch (err) {
+    return Object.assign(base, { ok: false, reason: 'Falha ao consultar: ' + (err.name === 'AbortError' ? 'tempo esgotado' : err.message) });
+  }
+}
+
+function noApiProvider(id, name, purpose, consoleUrl) {
+  return { id: id, name: name, purpose: purpose, consoleUrl: consoleUrl, ok: false, noApi: true, reason: 'Esse serviço não oferece consulta de saldo por API — veja no console.' };
+}
+
+async function getProviders() {
+  const list = await Promise.all([elevenLabsBalance(), falBalance()]);
+  list.push(noApiProvider('anthropic', 'Anthropic (Claude)', 'Roteiro e revisão', 'https://console.anthropic.com/settings/billing'));
+  list.push(noApiProvider('groq', 'Groq (Whisper)', 'Legendas', 'https://console.groq.com/settings/billing'));
+  list.push(noApiProvider('qstash', 'Upstash QStash', 'Fila do pipeline', 'https://console.upstash.com/qstash'));
+  return { generatedAt: new Date().toISOString(), providers: list };
+}
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
 
@@ -61,6 +128,12 @@ module.exports = async (req, res) => {
     if (!user.email || user.email.toLowerCase() !== ADMIN_EMAIL || !user.email_confirmed_at) {
       console.warn('[admin] Acesso negado para', user.email);
       res.status(403).json({ error: 'Acesso restrito' });
+      return;
+    }
+
+    // Saldos das APIs (aba APIs e saldos): chamada à parte pra não atrasar o resto.
+    if (req.query && req.query.view === 'providers') {
+      res.status(200).json(await getProviders());
       return;
     }
 
@@ -143,6 +216,8 @@ module.exports = async (req, res) => {
         id: u.id,
         email: u.email,
         provider: providers.indexOf('google') !== -1 ? 'Google' : 'E-mail',
+        name: (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || null,
+        whatsapp: (u.user_metadata && u.user_metadata.whatsapp) || null,
         createdAt: u.created_at,
         lastSignInAt: u.last_sign_in_at || null,
         credits: creditsByUser[u.id] != null ? creditsByUser[u.id] : 0,
@@ -204,6 +279,7 @@ module.exports = async (req, res) => {
           last30d: usersSince('createdAt', 30 * DAY),
         },
         activeSubscriptions: users.filter(function (u) { return u.subscription && u.subscription.active; }).length,
+        whatsappCollected: users.filter(function (u) { return !!u.whatsapp; }).length,
         videosReady: videoRows.filter(function (v) { return v.status === 'ready'; }).length,
         videosFailed: videoRows.filter(function (v) { return v.status === 'failed'; }).length,
         videosTotal: videoRows.length,

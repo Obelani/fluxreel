@@ -2,6 +2,8 @@
 <html lang="pt-BR" class="h-full">
 <head>
 <script src="/attribution.js"></script>
+<script src="/support.js"></script>
+<script src="/whatsapp.js"></script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Criar nova série — FluxReel</title>
@@ -1266,6 +1268,9 @@ e.head.appendChild(js)})(window,document,'sentinel','https://track.fluxreel.app/
     if (state.step === TOTAL_STEPS) {
       var btn = this;
       btn.disabled = true;
+      // Último passo: garante o WhatsApp do lead (quem entrou direto pelo Google
+      // ainda não informou) antes de seguir pro pagamento / geração.
+      if (window.FluxWhatsApp) await window.FluxWhatsApp.ensure(getSupabaseClient(), authSession.user);
       var direct = await canGenerateDirectly();
       btn.disabled = false;
       if (direct) { createSeriesAndGenerate(); } else { openPaywall(); }

@@ -2,6 +2,8 @@
 <html lang="pt-BR" class="h-full">
 <head>
 <script src="/attribution.js"></script>
+<script src="/support.js"></script>
+<script src="/whatsapp.js"></script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Entrar ou criar conta — FluxReel</title>
@@ -243,6 +245,11 @@ e.head.appendChild(js)})(window,document,'sentinel','https://track.fluxreel.app/
       <label for="nome">Nome</label>
       <input type="text" id="nome" name="nome" autocomplete="name" />
     </div>
+    <div class="field" data-only-signup>
+      <label for="whatsapp">WhatsApp</label>
+      <input type="tel" id="whatsapp" name="whatsapp" placeholder="(35) 99999-9999" maxlength="16" />
+      <span class="hint">Com DDD. Usamos só para suporte e avisos da sua conta.</span>
+    </div>
     <div class="field">
       <label for="email">Email</label>
       <input type="email" id="email" name="email" autocomplete="email" required />
@@ -269,6 +276,8 @@ e.head.appendChild(js)})(window,document,'sentinel','https://track.fluxreel.app/
   var googleLabel = document.getElementById('google-btn-label');
   var nomeInput = document.getElementById('nome');
   var senhaInput = document.getElementById('senha');
+  var whatsappInput = document.getElementById('whatsapp');
+  if (window.FluxWhatsApp) window.FluxWhatsApp.mask(whatsappInput);
   var errorBox = document.getElementById('form-error');
   var successBox = document.getElementById('form-success');
 
@@ -281,6 +290,7 @@ e.head.appendChild(js)})(window,document,'sentinel','https://track.fluxreel.app/
     googleLabel.textContent = isSignup ? 'Cadastrar com Google' : 'Continuar com Google';
     senhaInput.setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
     nomeInput.required = isSignup;
+    whatsappInput.required = isSignup;
     hideMessages();
   }
 
@@ -321,12 +331,17 @@ e.head.appendChild(js)})(window,document,'sentinel','https://track.fluxreel.app/
     var email = document.getElementById('email').value.trim();
     var senha = senhaInput.value;
     var nome = nomeInput.value.trim();
+    var whatsapp = null;
+    if (isSignup) {
+      whatsapp = window.FluxWhatsApp ? window.FluxWhatsApp.normalize(whatsappInput.value) : whatsappInput.value.replace(/\D/g, '');
+      if (!whatsapp) { showError('Digite um WhatsApp válido, com DDD. Ex.: (35) 99999-9999'); return; }
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = isSignup ? 'Criando conta...' : 'Entrando...';
 
     var result = isSignup
-      ? await signUpWithEmail(nome, email, senha, nextPath || undefined)
+      ? await signUpWithEmail(nome, email, senha, nextPath || undefined, whatsapp)
       : await signInWithEmail(email, senha);
 
     submitBtn.disabled = false;

@@ -90,6 +90,24 @@
     .main { padding: 22px 16px 60px; }
     h1 { font-size: 22px; }
   }
+  .prov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .prov { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .prov-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .prov-name { font-weight: 700; font-size: 15px; }
+  .prov-purpose { font-size: 12px; color: var(--faint); margin-top: 2px; }
+  .prov-big { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .prov-sub { font-size: 12.5px; color: var(--muted); }
+  .bar { height: 8px; border-radius: 999px; background: #e9eef8; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--blue); border-radius: 999px; }
+  .bar.warn > i { background: #d97706; }
+  .bar.low > i { background: #dc2626; }
+  .prov-reason { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .prov a.btn-link { align-self: flex-start; font-size: 13px; font-weight: 600; color: var(--blue); text-decoration: none; }
+  .prov a.btn-link:hover { text-decoration: underline; }
+  .btn.ghost { background: #fff; color: var(--blue); border: 1px solid var(--line); }
+  .wa-link { color: #15803d; font-weight: 600; text-decoration: none; }
+  .wa-link:hover { text-decoration: underline; }
+  .pill.none { background: #fdecec; color: #b91c1c; }
 </style>
 </head>
 <body>
@@ -106,6 +124,7 @@
       <button type="button" data-view="metricas" class="is-active">Métricas</button>
       <button type="button" data-view="usuarios">Usuários</button>
       <button type="button" data-view="rastreamento">Rastreamento</button>
+      <button type="button" data-view="apis">APIs e saldos</button>
     </nav>
     <div class="side-foot">
       <div class="who" id="who"></div>
@@ -133,11 +152,29 @@
 
       <section id="view-usuarios" hidden>
         <div class="head"><div><h1>Usuários</h1><p class="sub">Todos os cadastros, com saldo de créditos, assinatura e uso.</p></div></div>
-        <div class="tools"><input type="search" id="u-search" placeholder="Buscar por e-mail…" /></div>
+        <div class="tools">
+          <input type="search" id="u-search" placeholder="Buscar por nome ou e-mail…" />
+          <select id="u-filter">
+            <option value="">Todos os cadastros</option>
+            <option value="com">Com WhatsApp</option>
+            <option value="sem">Sem WhatsApp</option>
+            <option value="google">Entraram pelo Google</option>
+            <option value="email">Cadastro por formulário</option>
+          </select>
+          <button type="button" class="btn ghost" id="btn-export">Baixar leads (CSV)</button>
+        </div>
         <div class="table-card"><table>
-          <thead><tr><th>E-mail</th><th>Login</th><th>Saldo</th><th>Assinatura</th><th>Séries</th><th>Vídeos</th><th>Origem</th><th>Desde</th><th>Último acesso</th></tr></thead>
+          <thead><tr><th>E-mail</th><th>Login</th><th>WhatsApp</th><th>Saldo</th><th>Assinatura</th><th>Séries</th><th>Vídeos</th><th>Origem</th><th>Desde</th><th>Último acesso</th></tr></thead>
           <tbody id="u-body"></tbody>
         </table></div>
+      </section>
+
+      <section id="view-apis" hidden>
+        <div class="head">
+          <div><h1>APIs e saldos</h1><p class="sub" id="apis-updated">Saldo e uso das APIs que geram o material do lead (narração, imagens, roteiro, legendas e fila).</p></div>
+          <button type="button" class="btn" id="btn-apis-refresh">Atualizar</button>
+        </div>
+        <div class="prov-grid" id="apis-grid"><div class="empty">Carregando…</div></div>
       </section>
 
       <section id="view-rastreamento" hidden>
@@ -240,16 +277,15 @@
     document.getElementById('m-signups').innerHTML =
       tile('Últimas 24h', m.signups.last24h) + tile('Últimos 7 dias', m.signups.last7d) + tile('Últimos 30 dias', m.signups.last30d) + tile('Total', m.signups.total);
     document.getElementById('m-overview').innerHTML =
-      tile('Usuários cadastrados', m.signups.total) + tile('Assinaturas ativas', m.activeSubscriptions) +
+      tile('Usuários cadastrados', m.signups.total) + tile('Com WhatsApp', (m.whatsappCollected || 0) + ' de ' + m.signups.total) + tile('Assinaturas ativas', m.activeSubscriptions) +
       tile('Vídeos gerados', m.videosTotal) + tile('Vídeos prontos', m.videosReady) + tile('Vídeos com falha', m.videosFailed);
     renderUsers();
     renderTracking();
   }
 
   function renderUsers() {
-    var q = document.getElementById('u-search').value.trim().toLowerCase();
-    var rows = data.users.filter(function (u) { return !q || (u.email || '').toLowerCase().indexOf(q) !== -1; });
-    if (!rows.length) { document.getElementById('u-body').innerHTML = '<tr><td colspan="9" class="empty">Nenhum usuário encontrado.</td></tr>'; return; }
+    var rows = filteredUsers();
+    if (!rows.length) { document.getElementById('u-body').innerHTML = '<tr><td colspan="10" class="empty">Nenhum usuário encontrado.</td></tr>'; return; }
     document.getElementById('u-body').innerHTML = rows.map(function (u) {
       var sub = '<span class="pill">Sem assinatura</span>';
       if (u.subscription) {
@@ -257,12 +293,88 @@
         var cls = u.subscription.active ? 'ok' : 'warn';
         sub = '<span class="pill ' + cls + '">' + esc(plan) + ' · ' + esc(u.subscription.active ? 'Ativa' : u.subscription.status) + '</span>';
       }
-      return '<tr><td>' + esc(u.email) + '</td><td class="dim">' + esc(u.provider) + '</td><td>' + esc(u.credits) + '</td><td>' + sub +
+      return '<tr><td>' + esc(u.email) + '</td><td class="dim">' + esc(u.provider) + '</td><td>' + waCell(u) + '</td><td>' + esc(u.credits) + '</td><td>' + sub +
         '</td><td>' + esc(u.seriesCount) + '</td><td>' + esc(u.videosReady) + '/' + esc(u.videosTotal) + '</td><td class="dim">' + esc(originText(u.attribution)) + '</td><td class="dim">' + esc(fmtFull(u.createdAt)) +
         '</td><td class="dim">' + esc(fmtDate(u.lastSignInAt)) + '</td></tr>';
     }).join('');
   }
 
+  // ---------- WhatsApp / leads ----------
+  function waDigits(v) { return String(v || '').replace(/\D/g, ''); }
+  function waDisplay(v) {
+    var d = waDigits(v); if (d.indexOf('55') === 0 && d.length > 11) d = d.slice(2);
+    if (d.length === 11) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+    if (d.length === 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+    return v || '';
+  }
+  function waCell(u) {
+    if (!u.whatsapp) return '<span class="pill none">sem WhatsApp</span>';
+    var d = waDigits(u.whatsapp);
+    return '<a class="wa-link" target="_blank" rel="noopener noreferrer" href="https://wa.me/' + esc(d) + '">' + esc(waDisplay(u.whatsapp)) + '</a>';
+  }
+  function filteredUsers() {
+    var q = document.getElementById('u-search').value.trim().toLowerCase();
+    var f = document.getElementById('u-filter').value;
+    return data.users.filter(function (u) {
+      if (q && (u.email || '').toLowerCase().indexOf(q) === -1 && (u.name || '').toLowerCase().indexOf(q) === -1) return false;
+      if (f === 'com') return !!u.whatsapp;
+      if (f === 'sem') return !u.whatsapp;
+      if (f === 'google') return u.provider === 'Google';
+      if (f === 'email') return u.provider === 'E-mail';
+      return true;
+    });
+  }
+  function exportLeads() {
+    var rows = filteredUsers();
+    var head = ['Nome', 'E-mail', 'WhatsApp', 'Cadastro por', 'Origem', 'Cadastrado em', 'Assinatura', 'Créditos'];
+    var csv = [head].concat(rows.map(function (u) {
+      return [u.name || '', u.email || '', waDigits(u.whatsapp), u.provider, originText(u.attribution), fmtFull(u.createdAt),
+        u.subscription ? (PLAN_LABELS[u.subscription.planId] || u.subscription.planId) + ' ' + (u.subscription.active ? 'ativa' : u.subscription.status) : 'sem assinatura', u.credits];
+    })).map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
+    var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'leads-fluxreel-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+
+  // ---------- APIs e saldos ----------
+  var providersLoaded = false;
+  async function loadProviders() {
+    var btn = document.getElementById('btn-apis-refresh');
+    btn.disabled = true;
+    document.getElementById('apis-grid').innerHTML = '<div class="empty">Consultando as APIs…</div>';
+    try {
+      var res = await fetch('/api/admin?view=providers', { headers: { 'Authorization': 'Bearer ' + session.access_token }, cache: 'no-store' });
+      var body = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(body.error || 'Falha ao consultar as APIs.');
+      providersLoaded = true;
+      document.getElementById('apis-updated').textContent = 'Atualizado às ' + new Date(body.generatedAt).toLocaleTimeString('pt-BR') + '. Só ElevenLabs e fal.ai têm saldo por API; nas demais o atalho abre o console.';
+      document.getElementById('apis-grid').innerHTML = body.providers.map(renderProvider).join('');
+    } catch (err) {
+      document.getElementById('apis-grid').innerHTML = '<div class="empty">' + esc(err.message) + '</div>';
+    } finally { btn.disabled = false; }
+  }
+  function fmtNum(n) { return Number(n).toLocaleString('pt-BR'); }
+  function renderProvider(p) {
+    var head = '<div class="prov-top"><div><div class="prov-name">' + esc(p.name) + '</div><div class="prov-purpose">' + esc(p.purpose) + '</div></div>' +
+      (p.ok ? '<span class="pill ok">Conectado</span>' : (p.noApi ? '<span class="pill">Só no console</span>' : '<span class="pill warn">Sem acesso</span>')) + '</div>';
+    var body = '';
+    if (p.ok && p.unit === 'caracteres') {
+      var pct = p.limit ? Math.min(100, Math.round(p.used / p.limit * 100)) : 0;
+      var cls = pct >= 90 ? 'low' : (pct >= 70 ? 'warn' : '');
+      body = '<div class="prov-big">' + fmtNum(p.remaining) + '</div><div class="prov-sub">caracteres restantes de ' + fmtNum(p.limit) + ' (' + pct + '% usado)</div>' +
+        '<div class="bar ' + cls + '"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="prov-sub">' + (p.plan ? 'Plano ' + esc(p.plan) : '') + (p.resetAt ? ' · renova em ' + esc(fmtFull(p.resetAt)) : '') + '</div>';
+    } else if (p.ok && p.unit === 'saldo') {
+      var low = p.balance < 5;
+      body = '<div class="prov-big"' + (low ? ' style="color:#dc2626"' : '') + '>' + esc(p.currency === 'USD' ? 'US$ ' : p.currency + ' ') + esc(Number(p.balance).toFixed(2)) + '</div><div class="prov-sub">saldo de créditos' + (low ? ' — baixo, recarregue' : '') + '</div>';
+    } else {
+      body = '<div class="prov-reason">' + esc(p.reason || 'Indisponível.') + '</div>';
+    }
+    return '<div class="prov">' + head + body + '<a class="btn-link" target="_blank" rel="noopener noreferrer" href="' + esc(p.consoleUrl) + '">Abrir console →</a></div>';
+  }
   function addOption(sel, value, text) {
     var o = document.createElement('option');
     o.value = value; o.textContent = text;
@@ -314,10 +426,14 @@
     var b = e.target.closest('button[data-view]');
     if (!b) return;
     document.querySelectorAll('#nav button').forEach(function (x) { x.classList.toggle('is-active', x === b); });
-    ['metricas', 'usuarios', 'rastreamento'].forEach(function (v) { document.getElementById('view-' + v).hidden = v !== b.dataset.view; });
+    ['metricas', 'usuarios', 'rastreamento', 'apis'].forEach(function (v) { document.getElementById('view-' + v).hidden = v !== b.dataset.view; });
+    if (b.dataset.view === 'apis' && !providersLoaded) loadProviders();
   });
   document.getElementById('btn-refresh').addEventListener('click', load);
   document.getElementById('u-search').addEventListener('input', renderUsers);
+  document.getElementById('u-filter').addEventListener('change', renderUsers);
+  document.getElementById('btn-export').addEventListener('click', exportLeads);
+  document.getElementById('btn-apis-refresh').addEventListener('click', loadProviders);
   document.getElementById('t-search').addEventListener('input', renderTracking);
   document.getElementById('t-filter').addEventListener('change', renderTracking);
 

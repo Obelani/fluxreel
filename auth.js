@@ -135,7 +135,7 @@ async function signInWithGoogle(redirectPath) {
 }
 
 // ---------- E-mail e senha ----------
-async function signUpWithEmail(nome, email, senha, redirectPath) {
+async function signUpWithEmail(nome, email, senha, redirectPath, whatsapp) {
   const client = getSupabaseClient();
   if (!client) return { error: { message: 'Configuração do Supabase ausente.' } };
 
@@ -143,7 +143,7 @@ async function signUpWithEmail(nome, email, senha, redirectPath) {
     email: email,
     password: senha,
     options: {
-      data: { full_name: nome, attribution: (window.FluxAttribution && window.FluxAttribution.get()) || undefined },
+      data: { full_name: nome, whatsapp: whatsapp || undefined, attribution: (window.FluxAttribution && window.FluxAttribution.get()) || undefined },
       emailRedirectTo: window.location.origin + (redirectPath || REDIRECT_AFTER_LOGIN),
     },
   });
