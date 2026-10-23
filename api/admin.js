@@ -82,13 +82,15 @@ async function elevenLabsBalance() {
 
 async function falBalance() {
   const base = { id: 'fal', name: 'fal.ai', purpose: 'Imagens', consoleUrl: 'https://fal.ai/dashboard/usage-billing/credits' };
-  // A consulta de billing da fal costuma exigir uma chave com escopo ADMIN.
-  const key = process.env.FAL_ADMIN_KEY || process.env.FAL_KEY;
+  // A consulta de saldo da fal exige a permissão illing:usage:read, que vem nos
+  // presets de chave BILLING (o mais restrito), READONLY ou FULL. Não use FULL se
+  // puder evitar: é a chave que pode tudo. Aceita FAL_ADMIN_KEY por compatibilidade.
+  const key = process.env.FAL_BILLING_KEY || process.env.FAL_ADMIN_KEY || process.env.FAL_KEY;
   if (!key) return Object.assign(base, { ok: false, reason: 'Chave FAL_KEY não configurada.' });
   try {
     const r = await fetchTimeout('https://api.fal.ai/v1/account/billing?expand=credits', { headers: { Authorization: 'Key ' + key } });
     if (r.status === 401 || r.status === 403) {
-      return Object.assign(base, { ok: false, reason: 'A chave atual não tem acesso ao billing. Crie uma chave com escopo ADMIN em fal.ai/dashboard/keys e salve na Vercel como FAL_ADMIN_KEY.' });
+      return Object.assign(base, { ok: false, reason: 'A chave atual não pode ler o saldo. Crie uma chave com o preset Billing (ou Read-only) em fal.ai/dashboard/keys e salve na Vercel como FAL_BILLING_KEY.' });
     }
     if (!r.ok) return Object.assign(base, { ok: false, reason: 'fal.ai respondeu ' + r.status + '.' });
     const j = await r.json();
