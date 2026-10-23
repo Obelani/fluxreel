@@ -1,4 +1,4 @@
-// Suporte por WhatsApp — número único do app + balão flutuante no mobile.
+// Suporte por WhatsApp — número único do app + balão flutuante (mobile e desktop).
 //
 // Pra trocar o número do suporte, mexa SÓ aqui (PHONE) e no link estático do
 // botão em dashboard.html (aba "Fale Conosco", id btn-whatsapp-contact).
@@ -17,8 +17,6 @@
   var manual = window.FLUX_SUPPORT_BAR === 'manual';
 
   var css = '' +
-    '.fr-support-bar{display:none}' +
-    '@media (max-width:768px){' +
       /* balão flutuante no canto ESQUERDO: círculo verde com a logo + "Dúvidas?" */
       '.fr-support-bar{display:flex;align-items:center;gap:10px;position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom, 0px));z-index:90;' +
         'text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-tap-highlight-color:transparent}' +
@@ -33,6 +31,7 @@
       '.fr-support-tip{position:relative;background:#fff;color:#111827;font-weight:700;font-size:14px;line-height:1;padding:10px 14px;border-radius:14px;' +
         'box-shadow:0 8px 20px -8px rgba(0,0,0,.6)}' +
       '.fr-support-tip::before{content:"";position:absolute;left:-6px;top:50%;width:12px;height:12px;background:#fff;transform:translateY(-50%) rotate(45deg);border-radius:2px}' +
+    '@media (max-width:768px){' +
       'body.fr-has-support-bar{padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px))}' +
       /* wizard: os botões Voltar/Continuar ficam sempre bem acima do balão (nunca um colado no outro) */
       'body.fr-has-support-bar.fr-support-roomy{padding-bottom:calc(132px + env(safe-area-inset-bottom, 0px))}' +
