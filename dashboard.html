@@ -2,7 +2,6 @@
 <html lang="pt-BR" class="h-full">
 <head>
 <script src="/attribution.js"></script>
-<script src="/support.js"></script>
 <script src="/whatsapp.js"></script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -572,6 +571,13 @@ e.head.appendChild(js)})(window,document,'sentinel','https://track.fluxreel.app/
   // Guarda a origem (UTMs) no cadastro do usuário, pra não se perder se ele
   // confirmar o e-mail ou voltar por outro navegador/aparelho.
   if (window.FluxAttribution) window.FluxAttribution.persistToUser(getSupabaseClient(), authSession.user);
+
+  // Logo depois do login: pede o WhatsApp de quem ainda não informou. Na volta do
+  // checkout (?paid=1 / ?success=1) não pergunta, pra não atrapalhar o pagamento.
+  var returnParams = new URLSearchParams(window.location.search);
+  if (window.FluxWhatsApp && returnParams.get('paid') !== '1' && returnParams.get('success') !== '1') {
+    window.FluxWhatsApp.ensure(getSupabaseClient(), authSession.user, { title: 'Antes de continuar' });
+  }
 
   var authUser = authSession.user;
   var authName = (authUser.user_metadata && authUser.user_metadata.full_name) || authUser.email;

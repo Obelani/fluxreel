@@ -3,7 +3,9 @@
 // O número fica em user_metadata.whatsapp (Supabase Auth), só dígitos com DDI
 // (ex.: 5535991747115). Quem cria conta pelo formulário informa no cadastro
 // (login.html); quem entra direto pelo Google é perguntado no modal, antes de
-// gerar o vídeo (wizard e dashboard chamam FluxWhatsApp.ensure).
+// gerar o vídeo (wizard e dashboard chamam FluxWhatsApp.ensure). O 1º pedido é
+// logo depois do login, antes do passo 1 do wizard (título 'Antes de começar');
+// o do último passo / 'Gerar vídeo' fica como rede de segurança (já salvo = não abre).
 (function () {
   // Aceita (DD) 9XXXX-XXXX, DD9XXXXXXXX ou com 55 na frente. Celular BR: DDD
   // 11-99 + 9 dígitos começando com 9 (fixo de 8 dígitos também passa).
@@ -61,20 +63,25 @@
 
   // Garante que o usuário tem WhatsApp salvo. Resolve true quando tem (já tinha
   // ou acabou de informar). Sem opção de pular: é o "último passo".
-  function ensure(client, user) {
+  function ensure(client, user, opts) {
     if (openPromise) return openPromise;
     openPromise = new Promise(function (resolve) {
+      if (!client || !client.auth) {
+        // Sem cliente do Supabase não dá pra salvar: não trava o app, só avisa.
+        console.error('[FluxReel] FluxWhatsApp.ensure chamado sem cliente do Supabase.');
+        openPromise = null; resolve(false); return;
+      }
       // Confere o dado mais novo no servidor (a sessão em memória pode estar velha).
       var fresh = Promise.resolve(client.auth.getUser()).then(function (r) { return (r && r.data && r.data.user) || user; }, function () { return user; });
       fresh.then(function (u) {
         if (has(u)) { openPromise = null; resolve(true); return; }
-        show(client, u || user, function () { openPromise = null; resolve(true); });
+        show(client, u || user, opts || {}, function () { openPromise = null; resolve(true); });
       });
     });
     return openPromise;
   }
 
-  function show(client, user, done) {
+  function show(client, user, opts, done) {
     var st = document.createElement('style');
     st.textContent = CSS;
     document.head.appendChild(st);
@@ -84,7 +91,7 @@
     ov.setAttribute('role', 'dialog');
     ov.setAttribute('aria-modal', 'true');
     ov.innerHTML = '<form class="fr-wa-card" novalidate>' +
-      '<h2>Último passo para gerar seu vídeo</h2>' +
+      '<h2>' + (opts.title || 'Último passo para gerar seu vídeo') + '</h2>' +
       '<p>Qual é o seu WhatsApp de contato? Usamos só para suporte e avisos da sua conta.</p>' +
       '<label for="fr-wa-input">WhatsApp (com DDD)</label>' +
       '<input id="fr-wa-input" type="tel" placeholder="(35) 99999-9999" maxlength="16" />' +

@@ -9,7 +9,11 @@
   function url(msg) {
     return 'https://wa.me/' + PHONE + '?text=' + encodeURIComponent(msg || DEFAULT_MSG);
   }
-  window.FluxSupport = { phone: PHONE, url: url };
+  // A barra do mobile só vale pra quem ainda não é assinante (assinante tem o
+  // menu Fale Conosco no dashboard): na landing aparece sempre; no wizard a
+  // página define window.FLUX_SUPPORT_BAR = 'manual' antes de carregar este
+  // arquivo e chama FluxSupport.showBar() só se NÃO houver assinatura ativa.
+  var manual = window.FLUX_SUPPORT_BAR === 'manual';
 
   var css = '' +
     '.fr-support-bar{display:none}' +
@@ -42,6 +46,17 @@
     document.body.classList.add('fr-has-support-bar');
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
-  else mount();
+  function showBar() {
+    if (document.body) mount();
+    else document.addEventListener('DOMContentLoaded', mount);
+  }
+  function hideBar() {
+    var bar = document.getElementById('fr-support-bar');
+    if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    if (document.body) document.body.classList.remove('fr-has-support-bar');
+  }
+
+  window.FluxSupport = { phone: PHONE, url: url, showBar: showBar, hideBar: hideBar };
+
+  if (!manual) showBar();
 })();
