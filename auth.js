@@ -108,6 +108,62 @@ async function signInWithGoogleRedirectFallback(redirectPath) {
   }
 }
 
+// ---------- Botão oficial do Google (quando o prompt automático não abre) ----------
+// No celular o prompt do GSI (One Tap) quase nunca aparece, e o plano B antigo
+// (redirect via Supabase) mostra "…supabase.co" na tela do Google. O botão
+// oficial do GSI usa o MESMO caminho do desktop (ID token, sem redirect do
+// Supabase) e a escolha de conta mostra "fluxreel.app". Então: no celular vai
+// direto pra ele; no desktop só aparece se o prompt não abrir. O redirect do
+// Supabase fica só como último recurso (GSI bloqueado/indisponível).
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') ||
+    !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+}
+
+let _googleSheet = null;
+function closeGoogleSheet() {
+  if (_googleSheet && _googleSheet.parentNode) _googleSheet.parentNode.removeChild(_googleSheet);
+  _googleSheet = null;
+}
+
+function showGoogleButtonSheet() {
+  try {
+    closeGoogleSheet();
+    if (!document.getElementById('fr-gsi-style')) {
+      const st = document.createElement('style');
+      st.id = 'fr-gsi-style';
+      st.textContent =
+        '.fr-gsi-overlay{position:fixed;inset:0;z-index:400;background:rgba(5,6,12,.78);display:flex;align-items:center;justify-content:center;padding:16px;' +
+          'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}' +
+        '.fr-gsi-card{position:relative;width:100%;max-width:360px;background:#11121c;border:1px solid #23253a;border-radius:20px;padding:26px 22px 24px;color:#fff;text-align:center}' +
+        '.fr-gsi-card h3{margin:0 0 6px;font-size:18px}' +
+        '.fr-gsi-card p{margin:0 0 18px;font-size:14px;color:#a8a8b8}' +
+        '.fr-gsi-x{position:absolute;top:8px;right:10px;width:34px;height:34px;border:0;background:none;color:#a8a8b8;font-size:24px;line-height:1;cursor:pointer}' +
+        '.fr-gsi-btn{display:flex;justify-content:center;min-height:44px}';
+      document.head.appendChild(st);
+    }
+    const ov = document.createElement('div');
+    ov.className = 'fr-gsi-overlay';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.innerHTML = '<div class="fr-gsi-card"><button type="button" class="fr-gsi-x" aria-label="Fechar">&times;</button>' +
+      '<h3>Entrar com o Google</h3><p>Toque no botão para escolher sua conta.</p><div class="fr-gsi-btn" id="fr-gsi-btn"></div></div>';
+    document.body.appendChild(ov);
+    _googleSheet = ov;
+    ov.addEventListener('click', function (e) { if (e.target === ov) closeGoogleSheet(); });
+    ov.querySelector('.fr-gsi-x').addEventListener('click', closeGoogleSheet);
+    const width = Math.min(300, Math.max(220, (window.innerWidth || 360) - 90));
+    google.accounts.id.renderButton(ov.querySelector('#fr-gsi-btn'), {
+      type: 'standard', theme: 'filled_black', size: 'large', shape: 'pill',
+      text: 'continue_with', locale: 'pt-BR', logo_alignment: 'left', width: width,
+    });
+    return true;
+  } catch (e) {
+    console.error('[FluxReel] Não foi possível mostrar o botão do Google:', e);
+    closeGoogleSheet();
+    return false;
+  }
+}
 async function signInWithGoogle(redirectPath) {
   _googleRedirectPath = redirectPath || REDIRECT_AFTER_LOGIN;
 
@@ -125,11 +181,17 @@ async function signInWithGoogle(redirectPath) {
     callback: handleGoogleCredential,
     nonce: nonce.hashed,
   });
+  if (isMobileDevice()) {
+    // Celular: o prompt automático quase nunca abre — vai direto pro botão oficial.
+    if (!showGoogleButtonSheet()) signInWithGoogleRedirectFallback(redirectPath);
+    return;
+  }
   google.accounts.id.prompt(function (notification) {
     var notShown = notification.isNotDisplayed && notification.isNotDisplayed();
     var skipped = notification.isSkippedMoment && notification.isSkippedMoment();
     if (notShown || skipped) {
-      signInWithGoogleRedirectFallback(redirectPath);
+      // Prompt não abriu: mostra o botão oficial (continua exibindo fluxreel.app).
+      if (!showGoogleButtonSheet()) signInWithGoogleRedirectFallback(redirectPath);
     }
   });
 }

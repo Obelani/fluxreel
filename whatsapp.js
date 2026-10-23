@@ -40,8 +40,10 @@
     return !!(user && user.user_metadata && user.user_metadata.whatsapp);
   }
 
-  function save(client, digits) {
-    return client.auth.updateUser({ data: { whatsapp: digits, whatsapp_at: new Date().toISOString() } });
+  function save(client, digits, name) {
+    var data = { whatsapp: digits, whatsapp_at: new Date().toISOString() };
+    if (name) data.full_name = name;
+    return client.auth.updateUser({ data: data });
   }
 
   var CSS = '' +
@@ -51,6 +53,7 @@
     '.fr-wa-card h2{margin:0 0 8px;font-size:20px;line-height:1.25}' +
     '.fr-wa-card p{margin:0 0 16px;font-size:14px;line-height:1.55;color:#a8a8b8}' +
     '.fr-wa-card label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#e4e4e7}' +
+    '.fr-wa-field{margin-bottom:12px}' +
     '.fr-wa-card input{width:100%;box-sizing:border-box;background:#0c0d16;border:1px solid #2c2f47;border-radius:12px;padding:13px 14px;font-size:16px;color:#fff;outline:none}' +
     '.fr-wa-card input:focus{border-color:#4F6BFF;box-shadow:0 0 0 3px rgba(79,107,255,.25)}' +
     '.fr-wa-err{min-height:18px;margin:8px 0 0;font-size:13px;color:#fca5a5}' +
@@ -92,9 +95,11 @@
     ov.setAttribute('aria-modal', 'true');
     ov.innerHTML = '<form class="fr-wa-card" novalidate>' +
       '<h2>' + (opts.title || 'Último passo para gerar seu vídeo') + '</h2>' +
-      '<p>Qual é o seu WhatsApp de contato? Usamos só para suporte e avisos da sua conta.</p>' +
-      '<label for="fr-wa-input">WhatsApp (com DDD)</label>' +
-      '<input id="fr-wa-input" type="tel" placeholder="(35) 99999-9999" maxlength="16" />' +
+      '<p>Confirme seu nome e informe seu WhatsApp de contato. Usamos só para suporte e avisos da sua conta.</p>' +
+      '<div class="fr-wa-field"><label for="fr-wa-name">Seu nome</label>' +
+      '<input id="fr-wa-name" type="text" autocomplete="name" placeholder="Como podemos te chamar?" maxlength="80" /></div>' +
+      '<div class="fr-wa-field"><label for="fr-wa-input">WhatsApp (com DDD)</label>' +
+      '<input id="fr-wa-input" type="tel" placeholder="(35) 99999-9999" maxlength="16" /></div>' +
       '<div class="fr-wa-err" id="fr-wa-err" aria-live="polite"></div>' +
       '<button type="submit">Continuar</button>' +
       '<div class="fr-wa-note">Ao continuar, você aceita receber contato da FluxReel por WhatsApp.</div>' +
@@ -102,22 +107,28 @@
     document.body.appendChild(ov);
 
     var input = ov.querySelector('#fr-wa-input');
+    var nameInput = ov.querySelector('#fr-wa-name');
     var err = ov.querySelector('#fr-wa-err');
     var btn = ov.querySelector('button');
     mask(input);
-    setTimeout(function () { try { input.focus(); } catch (e) {} }, 50);
+    // Nome já conhecido (ex.: vem do Google) entra preenchido, mas editável.
+    var meta = (user && user.user_metadata) || {};
+    nameInput.value = String(meta.full_name || meta.name || '').trim();
+    setTimeout(function () { try { (nameInput.value ? input : nameInput).focus(); } catch (e) {} }, 50);
 
     ov.querySelector('form').addEventListener('submit', function (e) {
       e.preventDefault();
+      var name = nameInput.value.replace(/\s+/g, ' ').trim();
+      if (name.length < 2) { err.textContent = 'Digite seu nome.'; return; }
       var digits = normalize(input.value);
       if (!digits) { err.textContent = 'Digite um WhatsApp válido, com DDD. Ex.: (35) 99999-9999'; return; }
       err.textContent = '';
       btn.disabled = true;
       var label = btn.textContent;
       btn.textContent = 'Salvando…';
-      save(client, digits).then(function (r) {
+      save(client, digits, name).then(function (r) {
         if (r && r.error) throw r.error;
-        if (user && user.user_metadata) user.user_metadata.whatsapp = digits;
+        if (user && user.user_metadata) { user.user_metadata.whatsapp = digits; user.user_metadata.full_name = name; }
         document.body.removeChild(ov);
         done();
       }, function (ex) { throw ex; }).then(null, function (ex) {

@@ -25,6 +25,8 @@
       '.fr-support-bar a{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#06210f;font-weight:700;font-size:13px;' +
         'text-decoration:none;border-radius:999px;padding:9px 16px}' +
       'body.fr-has-support-bar{padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px))}' +
+      /* wizard: o botão Continuar fica sempre bem acima da barra (nunca um colado no outro) */
+      'body.fr-has-support-bar.fr-support-roomy{padding-bottom:calc(132px + env(safe-area-inset-bottom, 0px))}' +
       /* o aviso (toast) das páginas fica acima da barra */
       'body.fr-has-support-bar .toast{bottom:84px !important}' +
     '}';
@@ -44,6 +46,9 @@
       'WhatsApp</a>';
     document.body.appendChild(bar);
     document.body.classList.add('fr-has-support-bar');
+    // No wizard (modo manual) há botões de navegação no fim da página: dá mais
+    // espaço pra ninguém tocar no WhatsApp sem querer ao tentar Continuar.
+    if (manual) document.body.classList.add('fr-support-roomy');
   }
 
   function showBar() {
@@ -53,7 +58,7 @@
   function hideBar() {
     var bar = document.getElementById('fr-support-bar');
     if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
-    if (document.body) document.body.classList.remove('fr-has-support-bar');
+    if (document.body) document.body.classList.remove('fr-has-support-bar', 'fr-support-roomy');
   }
 
   window.FluxSupport = { phone: PHONE, url: url, showBar: showBar, hideBar: hideBar };
