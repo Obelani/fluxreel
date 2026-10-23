@@ -239,21 +239,23 @@
     g.innerHTML = (spinner ? '<div class="spinner"></div>' : '') + msg;
   }
 
-  var session = await requireAuth();
-  if (!session) return;
+  var session = await getCurrentSession();
+  if (!session) { window.location.replace('/admin-login.html'); return; }
   document.getElementById('who').textContent = session.user.email || '';
 
-  document.getElementById('btn-logout').addEventListener('click', function () { signOut(); });
+  document.getElementById('btn-logout').addEventListener('click', adminSignOut);
+
+  async function adminSignOut() { await getSupabaseClient().auth.signOut(); window.location.href = '/admin-login.html'; }
 
   async function load() {
     var btn = document.getElementById('btn-refresh');
     btn.disabled = true;
     try {
       var res = await fetch('/api/admin', { headers: { 'Authorization': 'Bearer ' + session.access_token }, cache: 'no-store' });
-      if (res.status === 401) { window.location.href = '/login.html?next=' + encodeURIComponent('/admin'); return; }
+      if (res.status === 401) { window.location.href = '/admin-login.html'; return; }
       if (res.status === 403) {
         gate('<h2>Acesso restrito</h2><span>Esta conta não tem permissão para ver o painel admin.</span><button type="button" class="btn" id="gate-logout">Sair</button>', false);
-        document.getElementById('gate-logout').addEventListener('click', function () { signOut(); });
+        document.getElementById('gate-logout').addEventListener('click', adminSignOut);
         return;
       }
       var body = await res.json().catch(function () { return {}; });
