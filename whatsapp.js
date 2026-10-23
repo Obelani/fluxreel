@@ -95,7 +95,7 @@
     ov.setAttribute('aria-modal', 'true');
     ov.innerHTML = '<form class="fr-wa-card" novalidate>' +
       '<h2>' + (opts.title || 'Último passo para gerar seu vídeo') + '</h2>' +
-      '<p>Confirme seu nome e informe seu WhatsApp de contato. Usamos só para suporte e avisos da sua conta.</p>' +
+      '<p>Informe seu nome e seu WhatsApp de contato. Usamos só para suporte e avisos da sua conta.</p>' +
       '<div class="fr-wa-field"><label for="fr-wa-name">Seu nome</label>' +
       '<input id="fr-wa-name" type="text" autocomplete="name" placeholder="Como podemos te chamar?" maxlength="80" /></div>' +
       '<div class="fr-wa-field"><label for="fr-wa-input">WhatsApp (com DDD)</label>' +
@@ -111,10 +111,10 @@
     var err = ov.querySelector('#fr-wa-err');
     var btn = ov.querySelector('button');
     mask(input);
-    // Nome já conhecido (ex.: vem do Google) entra preenchido, mas editável.
-    var meta = (user && user.user_metadata) || {};
-    nameInput.value = String(meta.full_name || meta.name || '').trim();
-    setTimeout(function () { try { (nameInput.value ? input : nameInput).focus(); } catch (e) {} }, 50);
+    // O nome SEMPRE começa vazio: o perfil do Google às vezes traz só o começo do
+    // e-mail (ex.: grupobelman2024), e queremos o nome de verdade do lead.
+    nameInput.value = '';
+    setTimeout(function () { try { nameInput.focus(); } catch (e) {} }, 50);
 
     ov.querySelector('form').addEventListener('submit', function (e) {
       e.preventDefault();
